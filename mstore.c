@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.10 2000/03/16 14:46:08 inan Exp $ */
+/* $Id: mstore.c,v 1.11 2000/03/27 04:07:12 zircote Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +11,7 @@
 #include "icap/icaproutines.h"
 
 
-#define MSTORE_VER "0.4"
+#define MSTORE_VER "0.5"
 #define	DATA_T	struct mstore_data
 #define	DATA	((DATA_T*) stream->data)
 
