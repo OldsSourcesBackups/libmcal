@@ -1,5 +1,5 @@
 /*
- *	#$Id: icalroutines.c,v 1.2 2000/05/11 19:43:23 inan Exp $
+ *	#$Id: icalroutines.c,v 1.3 2001/12/10 03:16:41 chuck Exp $
  *
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski

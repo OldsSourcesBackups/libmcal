@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.9 2001/01/09 03:26:48 markie Exp $
+ *	$Id: mcal.c,v 1.10 2001/12/10 03:16:41 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -1022,10 +1022,10 @@ static bool		dummy_remove(	CALSTREAM *stream,
 					unsigned long id);
 static bool		dummy_snooze(	CALSTREAM *stream,
 					unsigned long id);
-
+static bool             dummy_store(    CALSTREAM *stream,
+					const CALEVENT *event);
 static bool		dummy_delete(	CALSTREAM *stream,
 					char *calendar);
-
 static bool		dummy_rename(	CALSTREAM *stream,
 					char *src,char *dest);
 
@@ -1042,6 +1042,7 @@ const CALDRIVER dummy_driver =
 	dummy_append,
 	dummy_remove,
 	dummy_snooze,
+	dummy_store,
 	dummy_delete,
 	dummy_rename,
 	
@@ -1128,6 +1129,11 @@ dummy_snooze(CALSTREAM *stream, unsigned long id)
 	return false;
 }
 
+bool
+dummy_store(CALSTREAM *stream, const CALEVENT *event)
+{
+        return false;
+}
 bool
 dummy_delete(CALSTREAM *stream, char *calendar)
 {
