@@ -1,5 +1,5 @@
 /*
- *	#$Id: icaproutines.h,v 1.1 1999/12/02 08:02:27 zircote Exp $
+ *	#$Id: icaproutines.h,v 1.2 2000/01/25 03:08:10 markie Exp $
  *
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -41,6 +41,9 @@
 #define	ICAPPORT	7668
 #define	ICAPMAXTAG	16
 
+#define       range_start     data.range.start
+#define       range_end       data.range.end
+#define       alarm_when      data.alarm.when
 
 typedef enum {
 	ICAP_INVALID,
@@ -65,15 +68,6 @@ typedef enum {
 	ICAPTOK_EOF
 } icaptoken_t;
 
-typedef enum {
-	ICALTOK_ID,
-	ICALTOK_COLON,
-	ICALTOK_PARAMETER,
-	ICALTOK_VALUE,
-	ICALTOK_LF,
-	ICALTOK_JUNK,
-	ICALTOK_EOF
-} icaltoken_t;
 
 ICAPNET {
 	FILE		*in;
@@ -100,9 +94,7 @@ ICAPSEARCH {
 		} alarm;
 	}		data;
 };
-#define	range_start	data.range.start
-#define	range_end	data.range.end
-#define	alarm_when	data.alarm.when
+
 
 
 extern const char	*icaptok_s;
@@ -139,32 +131,5 @@ bool			icap_readtag(char *buf, size_t size);
 bool			icap_readgobble(void);
 bool			icap_readsearch(ICAPSEARCH *search);
 
-/* ICAL parser. */
-extern char	*ical_yytext;
-extern int	ical_yyleng;
-int		ical_yylex(void);
-void		ical_usebuf(const char *buf, size_t size);
-void		ical_preprocess(char *buf, size_t *size);
-bool		ical_parse(CALEVENT **event, const char *buf, size_t size);
-bool		ical_parse_vevent(CALEVENT *event);
-
-/* ICAL output. */
-FILE*		icalout_begin(void);
-bool		icalout_event(FILE *tmp, const CALEVENT *event);
-char*		icalout_end(FILE *tmp);
-
-void		icalout_label(FILE *out, const char *label);
-void		icalout_number(FILE *out, unsigned long value);
-void		icalout_string(FILE *out, const char *value);
-void		icalout_datetime(FILE *out, const datetime_t *value);
-
-void		ical_encode_base64(	FILE *out,
-					const unsigned char *buf,
-					size_t size);
-
-
-/* Parse routines. */
-unsigned char*	icap_decode_base64(unsigned char *buf, size_t *size);
-bool		icap_decode_dt(datetime_t *dt, const char *s);
 
 #endif

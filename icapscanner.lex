@@ -1,6 +1,6 @@
 %{
 /*
- *	#$Id: icapscanner.lex,v 1.1 1999/12/02 08:02:27 zircote Exp $
+ *	#$Id: icapscanner.lex,v 1.2 2000/01/25 03:08:10 markie Exp $
  *
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -32,6 +32,7 @@
  */
 
 #include <string.h>
+#include "mcal.h"
 #include "icaproutines.h"
 %}
 
@@ -200,7 +201,7 @@ icap_readsearch(ICAPSEARCH *search)
 	else if (!strcasecmp(icap_yytext, "ALARMING")) {
 		token = icap_yylex();
 		if (	token != ICAPTOK_DATETIME ||
-			!icap_decode_dt(&search->alarm_when, icap_yytext))
+			!cal_decode_dt(&search->alarm_when, icap_yytext))
 		{
 			goto out;
 		}
@@ -234,14 +235,14 @@ icap_readsearch(ICAPSEARCH *search)
 			case OP_GE:
 				if (!dt_empty(&search->range_start))
 					goto out;
-				good = icap_decode_dt(	&search->range_start,
+				good = cal_decode_dt(	&search->range_start,
 							icap_yytext);
 				good &= dt_hasdate(&search->range_start);
 				break;
 			case OP_LE:
 				if (!dt_empty(&search->range_end))
 					goto out;
-				good = icap_decode_dt(	&search->range_end,
+				good = cal_decode_dt(	&search->range_end,
 							icap_yytext);
 				good &= dt_hasdate(&search->range_end);
 				break;

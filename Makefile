@@ -1,10 +1,10 @@
-#$Id: Makefile,v 1.1 1999/12/02 08:02:27 zircote Exp $
+#$Id: Makefile,v 1.2 2000/01/25 03:08:10 markie Exp $
 
 CC=gcc
 FLEX=flex
 INCLUDE=-I..
 CFLAGS=-O0 -Wall -g $(INCLUDE)
-ALLOBJS=icap.o icaproutines.o lex.ical_yy.o lex.icap_yy.o
+ALLOBJS=icap.o icaproutines.o lex.icap_yy.o
 TARGET=icap_driver.o
 
 all: $(TARGET)
@@ -13,9 +13,6 @@ all: $(TARGET)
 $(TARGET): $(ALLOBJS)
 	ld -r -o $(TARGET) $(ALLOBJS)
 	touch bootstrap.in
-
-lex.ical_yy.c: icalscanner.lex
-	$(FLEX) $<
 
 lex.icap_yy.c: icapscanner.lex
 	$(FLEX) $<
