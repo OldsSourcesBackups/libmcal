@@ -1,0 +1,54 @@
+This is a reference of functions implemented in different areas of the mcal program.
+
+KEY: Y = Yes
+     N = No
+     / = N/A
+     P = Partial
+     ? = Unknown
+
+			PHP 4	PHP 3	Mcal	Gmcal	libmcal	mstore	ICAP	MySQL
+
+ADDRESS			
+valid			/				Y	Y	
+
+STREAM
+open			Y				Y	Y
+close			Y				Y	Y
+ping			/				Y	Y
+
+CALENDAR
+create			P				N	N
+rename			P				N	N
+delete			P				N	N
+
+EVENT SEARCH
+search_range		Y				Y	Y	
+search_alarm		Y				Y	Y
+next_recurrence		Y				Y	/
+
+EVENT READ
+fetch			Y				Y	Y
+
+EVENT WRITE
+append			Y				Y	Y	
+store			Y				Y	Y
+remove			Y				Y	Y
+snooze			Y				Y	Y
+expunge			P				N	/
+
+EVENT SET
+init			Y				Y	/
+set_category		Y				/	/
+set_title		Y				/	/
+set_description		Y				/	/
+set_start		Y				/	/
+set_end			Y				/	/
+set_alarm		Y				/	/
+set_class		Y				/	/
+set_recur_none		Y				Y	/
+set_recur_daily		Y				Y	/
+set_recur_weekly	Y				Y	/
+set_recur_monthly_mday	Y				Y	/
+set_recur_monthly_wday	Y				Y	/
+set_recur_yearly	Y				Y	/
+add_attribute		N				Y	/
