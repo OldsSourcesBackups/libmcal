@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.15 2000/10/02 14:27:53 rufustfirefly Exp $ */
+/* $Id: mstore.c,v 1.16 2000/10/05 17:38:18 rufustfirefly Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +48,7 @@ static bool		mstore_snooze(	CALSTREAM *stream,
 					unsigned long id);
 static bool             mstore_store(   CALSTREAM *stream, 
 					const CALEVENT *modified_event);
+
 CALDRIVER mstore_driver =
 {
 	mstore_valid,
@@ -202,10 +203,14 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 	}
 
 		cc_login(&username, &password);
-		if (username == NULL)
+		if (username == NULL) {
+			printf("\nNULL username\n");
 			goto fail;
-		if (!mstore_validuser(username,password))
+		}
+		if (!mstore_validuser(username,password)) {
+			printf("\n!mstore_validuser(%s,%s)\n",username,password);
 			goto fail;
+		}
 	}
 
 	if (!reopen) {
@@ -217,13 +222,19 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 
 	if (options & CAL_LOGIN) {
 		/* Copy login_userbuf, folder. */
-		if ((DATA->login_userbuf = strdup(username)) == NULL)
+		if ((DATA->login_userbuf = strdup(username)) == NULL) {
+			printf("\ncouldn't get login_userbuf (%s)\n",
+				username);
 			goto fail;
+		}
 
 	}
 
-	if ((DATA->folder = strdup(addr->folder)) == NULL)
+	if ((DATA->folder = strdup(addr->folder)) == NULL) {
+		printf("\ncouldn't get folder (%s)\n",
+			addr->folder);
 		goto fail;
+	}
 
 	/* Set up folder_user */
 	if(addr->host)
@@ -234,8 +245,11 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 		DATA->login_user=DATA->login_userbuf;
 		if (addr->user) {
 		  /* Copy and split folder_userbuf */
-		  if ((DATA->folder_userbuf = strdup(addr->user)) == NULL)
+		  if ((DATA->folder_userbuf = strdup(addr->user)) == NULL) {
+			printf("\ncouldn't get folder_userbuf (%s)\n",
+				addr->user);
 		    goto fail;
+		  }
 		  /* Check for identical folder/login users. */
 		  DATA->folder_user=DATA->folder_userbuf;
 		  if (	!strcmp(DATA->login_user, DATA->folder_user))
@@ -250,7 +264,6 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 	if (DATA->folder_userbuf == NULL) {
 		DATA->folder_user = DATA->login_user;
 	}
-
 
 	return stream;
 fail:
@@ -278,7 +291,30 @@ mstore_ping(CALSTREAM *stream)
 bool
 mstore_create(CALSTREAM *stream, const char *calendar)
 {
-	return false;
+	FILE *calfile;
+	char userpath[1000];
+
+	/*
+	if (!(stream = mstore_open (stream, (const CALADDR *)calendar, 0))) {
+		#ifdef DEBUG
+		  printf("Error! couldn't open calendar stream!\n");
+		#endif
+		return false;
+	}
+	*/
+	snprintf(userpath, 900, "%s/%s", DATA->base_path, calendar);
+	#ifdef DEBUG
+	  printf("attempting fopen on calendar file '%s'\n", userpath);
+	#endif
+	calfile = fopen (userpath, "w");
+	if (!calfile) {
+	    #ifdef DEBUG
+	      printf("Error! couldn't create calendar file!\n");
+	    #endif
+	    return false;
+	}
+	fclose (calfile);
+	return true;
 }
 
 
@@ -346,13 +382,13 @@ mstore_search_range(	CALSTREAM *stream,
 	datetime_t	_end = DT_INIT;
 	FILE *calfile;
 	char userpath[1000];
-	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
-	calfile=fopen (userpath,"a+");
-	if(!calfile)
-	  {
+
+	snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
+	calfile = fopen (userpath, "a+");
+	if(!calfile) {
 	    printf("Error! couldn't open calendar file!\n");
 	    exit(1);
-	  }
+	}
 	rewind(calfile);
 
 	if (start) {
@@ -371,7 +407,7 @@ mstore_search_range(	CALSTREAM *stream,
 			dt_setdate(&_end, end->year, end->mon, end->mday);
 	}
 
-	while((event=read_event(calfile))) {
+	while((event = read_event(calfile))) {
 		datetime_t	clamp = DT_INIT;
 
 		if (!start)
@@ -406,13 +442,12 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	FILE		*calfile;
 	char		userpath[1000];
 
-	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
-	calfile=fopen (userpath,"a+");
-	if(!calfile)
-	  {
+	snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
+	calfile=fopen (userpath, "a+");
+	if(!calfile) {
 	    printf("Error! couldn't open calendar file!\n");
 	    exit(1);
-	  }
+	}
 	rewind(calfile);
 	while((event=read_event(calfile))) {
 		if (dt_roll_time(&(event->start), 0, -alarm, 0) &&
@@ -435,13 +470,12 @@ mstore_fetch(CALSTREAM *stream, unsigned long id, CALEVENT **inevent)
 	FILE		*calfile;
 	char		userpath[1000];
 
-	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
-	calfile=fopen (userpath,"a+");
-	if(!calfile)
-	  {
+	snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
+	calfile = fopen (userpath,"a+");
+	if(!calfile) {
 	    printf("Error! couldn't open calendar file!\n");
 	    exit(1);
-	  }
+	}
 	rewind(calfile);
 	while((event=read_event(calfile))) {
 		if(event->id==id) {
@@ -624,4 +658,3 @@ if(!modified_event->id)
 	
         return true;
 }
-
