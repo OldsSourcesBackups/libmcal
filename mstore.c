@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.6 2000/01/26 23:14:54 askalski Exp $ */
+/* $Id: mstore.c,v 1.7 2000/01/28 00:04:04 markie Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -454,6 +454,12 @@ mstore_append(	CALSTREAM *stream, const CALADDR *addr,
 
 	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
 	calfile=fopen (userpath,"a");
+        if(!calfile)
+          {
+            printf("Error! couldn't open calendar file %s\n",userpath);
+	    perror("mstore_append");
+            return false;
+          }
 
 	myevent = *event;
 	myevent.id = time(NULL);
