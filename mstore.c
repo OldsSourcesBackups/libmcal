@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.17 2000/10/25 18:30:59 rufustfirefly Exp $ */
+/* $Id: mstore.c,v 1.18 2001/01/09 03:26:48 markie Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +48,10 @@ static bool		mstore_snooze(	CALSTREAM *stream,
 					unsigned long id);
 static bool             mstore_store(   CALSTREAM *stream, 
 					const CALEVENT *modified_event);
+static bool             mstore_delete(   CALSTREAM *stream, 
+					char *calendar);
+static bool             mstore_rename(   CALSTREAM *stream, 
+					char *src,char *dest);
 
 CALDRIVER mstore_driver =
 {
@@ -63,6 +67,8 @@ CALDRIVER mstore_driver =
 	mstore_remove,
 	mstore_snooze,
 	mstore_store,
+	mstore_delete,
+	mstore_rename
 };
 
 
@@ -667,4 +673,17 @@ if(!modified_event->id)
         rename(tmppath, calpath);
 	
         return true;
+}
+
+
+bool
+mstore_delete(CALSTREAM *stream, char *calendar)
+{
+  return true;
+}
+
+bool
+mstore_rename(CALSTREAM *stream, char *src,char *dest)
+{
+  return true;
 }
