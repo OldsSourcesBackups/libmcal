@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.22 2001/12/25 02:41:44 chuck Exp $ */
+/* $Id: mstore.c,v 1.23 2003/01/28 15:00:49 chuck Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -392,14 +392,6 @@ mstore_create(CALSTREAM *stream, const char *calendar)
 	FILE *calfile;
 	char userpath[1000];
 
-	/*
-	if (!(stream = mstore_open (stream, (const CALADDR *)calendar, 0))) {
-		#ifdef DEBUG
-		  printf("Error! couldn't open calendar stream!\n");
-		#endif
-		return false;
-	}
-	*/
 	snprintf(userpath, 900, "%s/%s", DATA->base_path, calendar);
 	#ifdef DEBUG
 	  printf("attempting fopen on calendar file '%s'\n", userpath);
@@ -509,16 +501,16 @@ mstore_search_range(	CALSTREAM *stream,
 	    datetime_t	clamp = DT_INIT;
 	    
 	    if (!start) {
-		dt_setdate(&clamp, 1, JANUARY, 1);
+            dt_setdate(&clamp, 1, JANUARY, 1);
 	    } else {
-		dt_setdate(&clamp,
-			   _start.year, _start.mon, _start.mday);
+            dt_setdate(&clamp,
+                       _start.year, _start.mon, _start.mday);
 	    }
 
 	    calevent_next_recurrence(event, &clamp, stream->startofweek);
 	    if (dt_hasdate(&clamp) &&
-		!(end && dt_compare(&clamp, &_end) > 0)) {
-		cc_searched(event->id);
+            !(end && dt_compare(&clamp, &_end) > 0)) {
+            cc_searched(event->id);
 	    }
 
 	    calevent_free(event);
@@ -534,6 +526,7 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	CALEVENT	*event;
 	FILE		*calfile;
 	char		userpath[1000];
+	datetime_t	_when = DT_INIT;
 
 	snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
 	calfile = fopen (userpath, "a+");
@@ -542,14 +535,58 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	    exit(1);
 	}
 	rewind(calfile);
+
+	if (when) {
+	    if (!dt_hasdate(when)) {
+            // LM:should this be _when = NULL? and again below for end?
+            when = NULL;
+	    } else {
+            dt_setdate(&_when,
+                       when->year, when->mon, when->mday);
+	    }
+	}
+
 	while ((event = read_event(calfile))) {
-		if (event->alarm &&
-		    dt_roll_time(&(event->start), 0, -(event->alarm), 0) &&
-		    dt_compare(&(event->start), when) <= 0 &&
-		    dt_compare(when, &(event->end)) <=0)
-		{
-			cc_searched(event->id);
-		}
+	    datetime_t	clamp = DT_INIT;
+	    datetime_t	clamp_end = DT_INIT;
+	    
+        /* Set the date in clamp to the specified search date, so that
+           we get the next recurrence after that. */
+        if (!when) {
+            dt_setdate(&clamp, 1, JANUARY, 1);
+	    } else {
+            dt_setdate(&clamp,
+                       _when.year, _when.mon, _when.mday);
+	    }
+
+        /* Handle recurring events; get the next occurrence on or
+           after the search date. */
+	    calevent_next_recurrence(event, &clamp, stream->startofweek);
+
+        /* Make sure that calevent_next_recurrence returned a valid
+           date; if not, we can skip this one. */
+        if (dt_hasdate(&clamp)) {
+
+            /* clamp needs to have a time; set it to the event's start
+               time. */
+            dt_settime(&clamp, event->start.hour, event->start.min, event->start.sec);
+
+            /* Set clamp_end's date and time to the day of the
+               recurrance, and the event's end time. */
+            dt_setdate(&clamp_end, clamp.year, clamp.mon, clamp.mday);
+            dt_settime(&clamp_end, event->end.hour, event->end.min, event->end.sec);
+
+            /* If an event has an alarm, roll clamp backwards by
+               event->alarm minutes, and then see if that time is before
+               or equal to the search date/time, and that the end date is
+               on or after the search date/time. */
+            if (event->alarm &&
+                dt_roll_time(&clamp, 0, -(event->alarm), 0) &&
+                dt_compare(&clamp, when) <= 0 &&
+                dt_compare(when, &clamp_end) <= 0) {
+                cc_searched(event->id);
+            }
+        }
 		calevent_free(event);
 	}
 	fclose(calfile);
