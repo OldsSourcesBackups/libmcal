@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.5 2000/01/25 03:08:10 markie Exp $
+ *	$Id: mcal.c,v 1.6 2000/02/27 05:01:54 inan Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -925,11 +925,23 @@ cal_snooze(CALSTREAM *stream, unsigned long id)
 
 
 bool
-cal_store(CALSTREAM *stream, const CALEVENT *event)
+cal_store(CALSTREAM *stream, CALEVENT *event)
 {
+	char		*folder;
+	bool		good;
+	folder = "INBOX";
+	
         if (stream == NULL || stream->dead)
                 return false;
-        return stream->driver->store(stream, event);
+
+	if (event->id == 0) {
+		good = cal_append (stream, folder, &event->id, event);
+	} 
+	else {
+		good = stream->driver->store(stream, event);
+	}
+		
+        return good;
 }
 
 /** Dummy Driver **/
