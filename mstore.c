@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.12 2000/04/22 16:02:13 chuck Exp $ */
+/* $Id: mstore.c,v 1.13 2000/05/11 18:36:56 inan Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -345,6 +345,7 @@ mstore_search_range(	CALSTREAM *stream,
 
 	if (start) {
 		if (!dt_hasdate(start))
+//LM:should this be _start = NULL? and again below for end?
 			start = NULL;
 		else {
 			dt_setdate(&_start,
