@@ -1,6 +1,33 @@
 /*
- * cc -g -o client test.o -L/usr/local/lib/mysql -lmysqlclient -lsocket -lnsl
+ *	$Id: mysqldrv.c,v 1.7 2000/05/10 17:51:56 inan Exp $
+ * Mysqldrv - A MySQL driver for MCAL
+ * Copyright (C) 2000 Lauren Matheson
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Library General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA  02111-1307, USA.
+ *
+ * Contact Information:
+ *
+ * Lauren Matheson
+ * inan@canada.com
+ *
+ * http://mcal.sourceforge.net
+ * http://mcal.chek.com
+ * mcal@lists.chek.com
  */
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -14,14 +41,9 @@
 
 #define VEVENT_TABLE "_VEVENT (
   ID                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  ATTACH                  TINYINT,
-  ATTENDEE                TINYINT,
-  CATEGORIES              TINYINT,
   CLASS                   ENUM(\"PUBLIC\", \"PRIVATE\", \"CONFIDENTIAL\", \"<other>\") NOT NULL,  /* Max 1 per VEVENT*/
   CLASS_OTHER_VALUE       TEXT,
   CLASS_XPARAM            INTEGER,                /* VALUE_KEY */ 
-  COMMENT                 TINYINT,
-  CONTACT                 TINYINT,
   CREATED                 TIMESTAMP(14),          /* Max 1 per VEVENT*/
   CREATED_VALUETYPE       ENUM(\"DATE-TIME\",\"DATE\") DEFAULT \"DATE-TIME\",
   CREATED_TZID            INTEGER,                /* VALUE_KEY */
@@ -42,8 +64,6 @@
   DTSTART_XPARAM          INTEGER,                /* VALUE_KEY */
   DURATION                INTEGER,                /* Max 1 per VEVENT no DTEND*/
   DURATION_XPARAM         INTEGER,                /* VALUE_KEY */
-  EXDATE                  TINYINT,
-  EXRULE                  TINYINT,
   GEO                     TINYINT,                /* Max 1 per VEVENT, a marker so that NULL means no GEO info*/
   GEO_LATITUDE            FLOAT(7,3),
   GEO_LONGITUDE           FLOAT(7,3),
@@ -54,7 +74,6 @@
   LOCATION_ALTREP         VARCHAR(255),
   LOCATION_LANGUAGE       VARCHAR(255),
   LOCATION_XPARAM         INTEGER,                /*VALUE_KEY*/
-  METHOD                  TINYINT,
   ORGANIZER               TEXT,                   /* Max 1 per VEVENT*/
   ORGANIZER_CN            INTEGER,                /* VALUE_KEY */
   ORGANIZER_DIR           INTEGER,                /* VALUE_KEY */
@@ -68,10 +87,6 @@
   RECURRENCE_ID_RANGE     ENUM(\"THISANDPRIOR\", \"THISANDFUTURE\"),
   RECURRENCE_ID_TZID      INTEGER,                /* VALUE_KEY */
   RECURRENCE_ID_XPARAM    INTEGER,                 /* VALUE_KEY */
-  RDATE_KEY               TINYINT,
-  RELATED_TO              TINYINT,
-  RESOURCES               TINYINT,
-  RRULE                   TINYINT,                /* VALUE_KEY */
   SUMMARY                 TINYTEXT,               /* Max 1 per VEVENT*/
   SUMMARY_ALTREP          INTEGER,                /* VALUE_KEY */
   SUMMARY_LANGUAGE        INTEGER,                /* VALUE_KEY */
@@ -88,14 +103,33 @@
   UID_XPARAM              INTEGER,                /* VALUE_KEY */
   URL                     TEXT,                /* Max 1 per VEVENT*/
   URL_XPARAM              INTEGER,                 /* VALUE_KEY */                 
-  X_PROP_KEY              TINYINT,               
-  ALARM_KEY               TINYINT,
   UNIQUE KEY UID(UID)
   )"
 /* would also like to index on: but they can be null... hmmm...
  * KEY DTSTART(DTSTART),
  * KEY DTEND(DTEND)
  */
+
+/* These are the VEVENT elements of unlimited number, so will have seperate tables joined to VEVENT.ID
+  ATTACH                  
+  ATTENDEE                
+  CATEGORIES              Already included
+  COMMENT                 
+  CONTACT                 
+  EXDATE                  
+  EXRULE                  
+  METHOD                  
+  RDATE_KEY               
+  RELATED_TO              
+  RESOURCES               
+  RRULE                   Already included
+  X_PROP_KEY              Already included       
+  ALARM_KEY
+                 
+  The only other table is XPARAM which lists parameter extensions for most fields.  This is included, but not yet used
+*/
+
+
 #define CATEGORIES_TABLE "_CATEGORIES (
            ID                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
            VALUE_KEY               INTEGER NOT NULL,
@@ -107,16 +141,18 @@
            ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
            VALUE_KEY                INTEGER NOT NULL,
            VALUE                    TEXT NOT NULL,
-           NAME                     TEXT NOT NULL,
+           NAME                     VARCHAR(252) NOT NULL,
            PARAMS                   INTEGER,             /* VALUE_KEY (XPARAM)*/
-           KEY  VALUE_KEY(VALUE_KEY)
+           KEY  VALUE_KEY(VALUE_KEY),
+           UNIQUE UNIQUE_KEY(VALUE_KEY, NAME)
    )"
 #define XPARAM_TABLE "_XPARAM (
            ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
            VALUE_KEY                INTEGER NOT NULL,
            VALUE                    TEXT NOT NULL,
-           NAME                     TEXT NOT NULL,
-           KEY  VALUE_KEY(VALUE_KEY)
+           NAME                     VARCHAR(252) NOT NULL,
+           KEY  VALUE_KEY(VALUE_KEY),
+           UNIQUE UNIQUE_KEY(VALUE_KEY, NAME)
    )"
 #define RRULE_TABLE "_RRULE (
            ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -171,6 +207,8 @@
 
 static void		mysqldrv_freestream(CALSTREAM *stream);
 static unsigned long mysqldrv_mysql_query(CALSTREAM *stream, const char *query);
+static void         mysqldrv_make_timestamp ( char *output, const datetime_t *value );
+static void         mysqldrv_set_recur (CALEVENT *event, const char *freq, const char *enddate, const char *interval, const char *byday);
 //static bool		mysqldrv_validuser(const char *username,const char *password);
 //static bool		mysqldrv_userexists(const char *username);
 
@@ -230,17 +268,19 @@ mysqldrv_freestream(CALSTREAM *stream)
 	}
 }
 
-/* returns unique index, 0 or null
+/* returns unique index, 0 or null -- silly me, for an integer null is 0.. 
  */
 unsigned long
 mysqldrv_mysql_query(CALSTREAM *stream, const char *query) {
     unsigned long output;
 
     output = mysql_query(DATA,query);
-    cc_vlog (query,"");
-    cc_vlog (mysql_error(DATA),"");
+
+//    cc_vlog (query,"");
+//    cc_vlog (mysql_error(DATA),"");
     if (output == 0) {
-        output = mysql_insert_id(DATA);
+//        output = mysql_insert_id(DATA);
+        output = true;
     } else {
         output = false;
     }
@@ -347,119 +387,124 @@ fail:
 	return NULL;
 }
 
+void
+mysqldrv_make_timestamp ( char *output, const datetime_t *value ) {
+    char temp_str[6];
+    sprintf (output ,"%04u%02u%02u", value->year, value->mon, value->mday);
+    if (dt_hastime(value)) {
+        sprintf(temp_str,	"%02u%02u%02u", value->hour, value->min, value->sec);
+        strcat (output, temp_str);
+    }
+}
+
+void
+mysqldrv_set_recur (CALEVENT *event, const char *freq, const char *enddate, const char *interval, const char *byday) {
+    recur_t temp_recur;
+    byday_t temp_byday;
+
+    ical_get_recur_freq(&temp_recur, freq);
+    event->recur_type = temp_recur;
+    switch(temp_recur){
+        case RECUR_WEEKLY:
+            ical_get_byday(&temp_byday, byday);
+            event->recur_data.weekly_wday = temp_byday.weekdays;
+            break;
+        case RECUR_MONTHLY_WDAY:
+            //even though we've stored extra monthly_wday info it is ignored by mcal right now
+        case RECUR_NONE:
+        case RECUR_DAILY:
+        case RECUR_MONTHLY_MDAY:
+        case RECUR_YEARLY:
+        case NUM_RECUR_TYPES:
+            break;
+    }
+    cal_decode_dt(&(event)->recur_enddate, enddate);
+    event->recur_interval = atol(interval);
+}
+
+
 bool
 mysqldrv_search_range(	CALSTREAM *stream, const datetime_t *start, const datetime_t *end) {
-/*
-not supported:
- COUNT
- BYDAY (list of dates)
- BYSECOND
- BYMINUTE
- BYHOUR
- BYWEEKNO (week of year)
- BYSETPOS (wacky, wacky)
- WKST assumed to be sunday 
+    bool error = false;
+    char buffer [10000];
+    char folder [100];
+    char startstamp [14];
+    char endstamp [14];
+    char temp_str [1000];
+    MYSQL_RES *query_result;
+    MYSQL_ROW row;
+    CALEVENT *event;
+       
+    strcpy( folder, DATA->user ); 
+    mysqldrv_make_timestamp( startstamp, start );
+    mysqldrv_make_timestamp( endstamp, end );
+    
+    sprintf (buffer, "SELECT %s_VEVENT.UID, %s_RRULE.ID, DATE_FORMAT(%s_VEVENT.DTSTART,'Ymd'), %s_RRULE.FREQ, DATE_FORMAT(%s_RRULE.UNTIL,'Ymd'), %s_RRULE.INTERVAL_VAL, %s_RRULE.BYDAY FROM %s_VEVENT LEFT JOIN %s_RRULE ON %s_VEVENT.ID = %s_RRULE.VALUE_KEY ", folder, folder, folder, folder, folder, folder, folder, folder, folder, folder, folder);
+    sprintf (temp_str, "WHERE (%s_VEVENT.DTSTART <= %s) AND ( (%s_VEVENT.DTEND >= %s) OR (%s_VEVENT.DTSTART >= %s) OR (%s_RRULE.UNTIL >= %s) )", folder, endstamp, folder, startstamp, folder, startstamp, folder, startstamp);
+    strcat (buffer, temp_str);
 
+    if ( mysqldrv_mysql_query(stream, buffer) ) {
+        // the records exist
+        query_result = mysql_store_result( DATA );
+        while ((row = mysql_fetch_row( query_result ))) {
 
-sql pseudocode    
-    SELECT UID 
-    FROM lauren_VEVENT --joined to lauren_RRULE
-    WHERE DTSTART <= start_unix
-          AND
-          (
-            ( DTEND >= end_unix )
-            OR
-            (
-              ( UNTIL >= end_unix ) 
-              AND
-              (
-                ( FREQ = "DAILY"
-                  AND
-                  INTERVAL_VAL - MOD((start_days-TO_DAYS(FROM_UNIXTIME(DTSTART))),INTERVAL_VAL) <= end_days-start_days
-                )
-                OR
-                ( FREQ = "WEEKLY"
-                  AND
-generate based on days in start..end
-                  ((BYDAY LIKE "%MO%")OR(BYDAY LIKE "....))
-this code does not identify interval steps, may incorrectly identify
-                )
-                OR
-                ( FREQ = "MONTHLY"
-                  AND
-                  IS NULL(BYDAY)
-                  AND
-                  INTERVAL_VAL- ((start_month-MONTH(FROM_UNIXTIME(DTSTART))+12*(start_year-YEAR(FROM_UNIXTIME(DTSTART)))mod INTERVAL_VAL <= (end_month - start_month)+12*(end_year-start_year)
-                  AND
-                  DAYOFMONTH(DTSTART) >= start_dayofmonth
-                  AND
-                  DAYOFMONTH(DTSTART) <= end_dayofmonth
-                )
-                OR
-                ( FREQ = "MONTHLY"
-                  AND
-                  IS NOT NULL(BYDAY)
-                  AND
-not done                            
-                )
-                OR
-                ( FREQ = "YEARLY"
-                  AND
-                  IS NULL(BYDAY)
-                  AND
-                  DAYOFYEAR(DTSTART)>=start_dayofyear
-                  AND
-                  DAYOFYEAR(DTSTART)<=end_dayofyear
-                )
-              )
-            )
-          )
-          
+            if ( row[1]==0x0 ) {
+                //_RRULE.ID is null => no recurrence to worry about, just include it.
+                cc_searched(atol(row[0]));
+            } else {
+                datetime_t  clamp = DT_INIT;
 
-original pseudocode
-          
-        switch (RRULE)
-            case(NULL)
-                DTSTART <=(timestamp)start
-                and DTEND >=(timestamp)end
-            else
-                switch(FREQ)
-                    case(DAILY) //INTERVAL_VAL
-                        DTSTART <=(timestamp)start
-                        and UNTIL >=(timestamp)end
-                        and start+(INTERVAL_VAL- (start-DTSTART)mod INTERVAL_VAL) <= end
-                    case(WEEKLY)//BYDAY,INTERVAL_VAL,
-************
+                event = calevent_new();
+                cal_decode_dt(&(event)->start, row[2]);
+                mysqldrv_set_recur (event, row[3], row[4], row[5], row[6]);
+                calevent_next_recurrence(event, &clamp, stream->startofweek);
 
-                    case(MONTHLY)  //monthly by day, date
-                        switch(BYDAY)
-                            case(NULL) //monthly by date
-                                DTSTART <=(timestamp)start
-                                and UNTIL >=(timestamp)end
-                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
-                                and dayofmonth(DTSTART) >= start-firstdayofmonth
-                                and dayofmonth(DTSTART) <= end-firstdayofmonth
-                            else //monthly by day
-                                DTSTART <=(timestamp)start
-                                and UNTIL >=(timestamp)end
-                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
-                                and dayofmonth(BYDAY rule) >= start-firstdayofmonth
-                                and dayofmonth(BYDAY rule) <= end-firstdayofmonth
-                                
-                    case(YEARLY)
-                        DTSTART <=(timestamp)start
-                        and UNTIL >=(timestamp)end
-                        and dayofyear(DTSTART)>=start-firstdayofyear
-                        and dayofyear(DTSTART)<=end-firstdayofyear
-*/
-    return false;
+                if (!start) {
+                    dt_setdate(&clamp, 1, JANUARY, 1);
+                } else {
+                    dt_setdate(&clamp, start->year, start->mon, start->mday);
+                }
+
+                if ( dt_hasdate(&clamp) && !(end && dt_compare(&clamp, end) > 0))	{
+                    cc_searched(atol(row[0]));
+                }
+                calevent_free(event);
+            }
+        }
+        mysql_free_result( query_result );
+    }
+    return !error;
 }
 
 bool
 mysqldrv_search_alarm(	CALSTREAM *stream, const datetime_t *when) {
-    return false;
+    bool error = false;
+    char buffer [10000];
+    char folder [100];
+    char whenstamp [14];
+    char temp_str [1000];
+    MYSQL_RES *query_result;
+    MYSQL_ROW row;
+       
+    strcpy( folder, DATA->user ); 
+    mysqldrv_make_timestamp( whenstamp, when );
+    
+    sprintf (buffer, "SELECT %s_VEVENT.UID FROM %s_VEVENT LEFT JOIN %s_X_PROP ON %s_VEVENT.ID = %s_X_PROP.VALUE_KEY ", folder, folder, folder, folder, folder);
+    sprintf (temp_str, "WHERE (DATE_SUB(%s_VEVENT.DTSTART, INTERVAL %s_X_PROP.VALUE MINUTE) <= %s) AND ( (%s_VEVENT.DTEND >= %s) OR (%s_VEVENT.DTSTART >= %s) )", folder, folder, whenstamp, folder, whenstamp, folder, whenstamp);
+    strcat (buffer, temp_str);
+
+    if ( mysqldrv_mysql_query(stream, buffer) ) {
+        // the records exist
+        query_result = mysql_store_result( DATA );
+        while ((row = mysql_fetch_row( query_result ))) {
+            cc_searched(atol(row[0]));
+        }
+        mysql_free_result( query_result );
+    }
+    return !error;
 }
 
+#define ERRTEST error = error || !
 bool
 mysqldrv_fetch(	CALSTREAM *stream, unsigned long uid, CALEVENT **event){
     bool error = false;
@@ -471,51 +516,72 @@ mysqldrv_fetch(	CALSTREAM *stream, unsigned long uid, CALEVENT **event){
     MYSQL_ROW row;
 
     strcpy (folder, DATA->user);
-cc_vlog("hi","");        
     // get record id from uid
     strcpy ( buffer, "SELECT \
         ID, \
-        CLASS, \
+        CLASS LIKE 'PUBLIC', \
         DESCRIPTION,\
-        CONCAT(DATE_FORMAT(DTEND,'Ymd'),IF(DTEND_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTEND,'His'),'Z'),'')),\
-        CONCAT(DATE_FORMAT(DTSTART,'Ymd'),IF(DTSTART_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTSTART,'His'),'Z'),'')),\
+        CONCAT( DATE_FORMAT(DTEND,'Ymd'), IF(DTEND_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTEND,'His'),'Z'),'') ),\
+        CONCAT( DATE_FORMAT(DTSTART,'Ymd'), IF(DTSTART_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTSTART,'His'),'Z'),'') ),\
         SUMMARY, \
         UID");
     sprintf( temp_string," FROM %s_VEVENT WHERE UID=%lu", folder, uid );
     strcat (buffer, temp_string);
-cc_vlog(buffer,"");
 
-    if ( mysqldrv_mysql_query(stream, buffer)==0 ) {
+    if ( mysqldrv_mysql_query(stream, buffer) ) {
         // the record exists in VEVENT
-
         query_result = mysql_store_result( DATA );
-cc_vlog("hi","");
-        row = mysql_fetch_row( query_result );
-cc_vlog("hi","");
-        id = row[0];        
-cc_vlog("hi","");
-        (*event)->public = (strcmp(row[1],"PUBLIC")==0);
-cc_vlog("hi","");
-//       strcpy ((*event)->description, row[2]);
-cc_vlog("hi","");
-cc_vlog(row[1],"");
-cc_vlog(row[2],"");
-cc_vlog(row[3],"");
-cc_vlog(row[4],"");
-cc_vlog(row[5],"");
-cc_vlog(row[6],"");
-cc_vlog(row[7],"");
-        //row 5 6
-//        strcpy ((*event)->title, row[7]);
-        (*event)->id = atol(row[8]);
-        
-            
+        if (query_result->row_count == 0) {
+	    // no data
+	    error = true;
+        } else {
+            row = mysql_fetch_row( query_result );
 
+            id = strdup (row[0]);        
+            (*event)->public = atoi(row[1]);
+            (*event)->description = strdup(row[2]);
+            cal_decode_dt(&(*event)->start, row[3]);
+    	    //dt_hasdate(&(*event)->start);
+            cal_decode_dt(&(*event)->end, row[4]);
+	    //dt_hasdate(&(*event)->end);
+            (*event)->title = strdup(row[5]);
+            (*event)->id = atol(row[6]);
+            // query_result freed at the very end
+
+            sprintf (buffer, "SELECT NAME, VALUE FROM %s_X_PROP WHERE VALUE_KEY=%s",folder, id);
+            if ( mysqldrv_mysql_query(stream, buffer) ) {
+                // there are x prop's for this event
+                query_result = mysql_store_result( DATA );
+                
+                while ((row = mysql_fetch_row( query_result ))) {
+                    if (strcmp(row[0],"X-ALARM") == 0) {
+                        (*event)->alarm = atol(row[1]);
+                    } else {
+                        calevent_setattr(*event, row[0], row[1]);
+                    }
+                }
+                // query_result freed at the very end
+            }
+        
+            sprintf (buffer, "SELECT FREQ,DATE_FORMAT(UNTIL,'Ymd'), INTERVAL_VAL, BYDAY FROM %s_RRULE WHERE VALUE_KEY=%s", folder, id);
+            if ( mysqldrv_mysql_query(stream, buffer) ) {
+                query_result = mysql_store_result( DATA );
+                if (query_result->row_count != 0) {
+                    // there is recurrence for this event
+                    row = mysql_fetch_row( query_result );
+                    mysqldrv_set_recur (*event, row[0], row[1], row[2], row[3]);
+	        }
+                // query_result freed at the very end
+            }
+        }
         mysql_free_result( query_result );
     } else {
+        error = true;
     }
-    return false;
+
+    return !error;
 }
+#undef ERRTEST
 
 #define	STORE_STRING(var, field) {      \
     if ( var ) {                        \
@@ -643,7 +709,9 @@ mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALE
     }
 
     sprintf ( buffer, "INSERT INTO %s_VEVENT ( %s ) VALUES ( %s )", folder, fieldbuffer, valbuffer );
-    if (!(auto_id = mysqldrv_mysql_query(stream, buffer))){
+    if ( mysqldrv_mysql_query(stream, buffer)) {
+        auto_id = mysql_insert_id(DATA);
+    } else {
         error = true;
         strcat (error_text, "VEVENT query error\n");
     }
@@ -713,7 +781,9 @@ mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALE
         fieldbuffer[ strlen(fieldbuffer)-2 ] = '\0';    
 
         sprintf ( buffer, "INSERT INTO %s_RRULE ( %s ) VALUES ( %s )", folder, fieldbuffer, valbuffer );
-        if (!(auto_id = mysqldrv_mysql_query(stream, buffer))){
+        if (mysqldrv_mysql_query(stream, buffer)) {
+	    auto_id = mysql_insert_id(DATA);
+	} else {
             error = true;
             strcat (error_text, "RRULE query error\n");
         }
@@ -748,11 +818,11 @@ mysqldrv_remove( CALSTREAM *stream, unsigned long uid){
         // the record exists in VEVENT
         query_result = mysql_store_result( DATA );
         temp_row = mysql_fetch_row( query_result );
-        id = temp_row[0];
+        id = strdup (temp_row[0]);        
         mysql_free_result( query_result );
         
         sprintf (buffer, "DELETE FROM %s_VEVENT WHERE ID = %s", folder, id );
-        if (!(mysqldrv_mysql_query( stream, buffer )==0)) {
+        if (!mysqldrv_mysql_query( stream, buffer )) {
             error = true;
         }
         sprintf (buffer, "DELETE FROM %s_CATEGORIES WHERE VALUE_KEY = %s", folder, id );
@@ -769,8 +839,38 @@ mysqldrv_remove( CALSTREAM *stream, unsigned long uid){
     return !error;
 }
 
-bool		mysqldrv_snooze(	CALSTREAM *stream, unsigned long id){
-    return false;
+bool
+mysqldrv_snooze( CALSTREAM *stream, unsigned long uid) {
+    bool error = false;
+    char buffer [10000];
+    char folder [100];
+    char *id;
+    MYSQL_RES *query_result;
+    MYSQL_ROW row;
+       
+    strcpy( folder, DATA->user ); 
+
+    sprintf (buffer, "SELECT ID FROM %s_VEVENT WHERE UID = %lu", folder, uid);
+    if ( mysqldrv_mysql_query(stream, buffer) ) {
+        // the record exists in VEVENT
+        query_result = mysql_store_result( DATA );
+        if (query_result->row_count == 0) {
+	    // no data
+	    error = true;
+        } else {
+            row = mysql_fetch_row( query_result );
+            id = strdup (row[0]);
+	}
+	mysql_free_result( query_result );
+    
+        sprintf (buffer, "UPDATE %s_X_PROP SET VALUE=0 WHERE NAME='X-ALARM' AND VALUE_KEY = %s", folder, id);
+        if ( !mysqldrv_mysql_query(stream, buffer) ) {
+            error = true;
+        }
+    } else {
+        error = true;
+    }
+    return !error;
 }
 
 bool
@@ -786,3 +886,113 @@ mysqldrv_store( CALSTREAM *stream, CALEVENT *event) {
     
     return !error;
 }
+
+
+/*
+PSEUDOCODE for SEARCH_RANGE.  (this is has lots of errors in it though)
+
+not supported:
+ COUNT
+ BYDAY (list of dates)
+ BYSECOND
+ BYMINUTE
+ BYHOUR
+ BYWEEKNO (week of year)
+ BYSETPOS (wacky, wacky)
+ WKST assumed to be sunday 
+
+
+sql pseudocode    
+    SELECT UID 
+    FROM lauren_VEVENT --joined to lauren_RRULE
+    WHERE DTSTART <= start_unix
+          AND
+          (
+            ( DTEND >= end_unix )
+            OR
+            (
+              ( UNTIL >= end_unix ) 
+              AND
+              (
+                ( FREQ = "DAILY"
+                  AND
+                  INTERVAL_VAL - MOD((start_days-TO_DAYS(FROM_UNIXTIME(DTSTART))),INTERVAL_VAL) <= end_days-start_days
+                )
+                OR
+                ( FREQ = "WEEKLY"
+                  AND
+generate based on days in start..end
+                  ((BYDAY LIKE "%MO%")OR(BYDAY LIKE "....))
+this code does not identify interval steps, may incorrectly identify
+                )
+                OR
+                ( FREQ = "MONTHLY"
+                  AND
+                  IS NULL(BYDAY)
+                  AND
+                  INTERVAL_VAL- ((start_month-MONTH(FROM_UNIXTIME(DTSTART))+12*(start_year-YEAR(FROM_UNIXTIME(DTSTART)))mod INTERVAL_VAL <= (end_month - start_month)+12*(end_year-start_year)
+                  AND
+                  DAYOFMONTH(DTSTART) >= start_dayofmonth
+                  AND
+                  DAYOFMONTH(DTSTART) <= end_dayofmonth
+                )
+                OR
+                ( FREQ = "MONTHLY"
+                  AND
+                  IS NOT NULL(BYDAY)
+                  AND
+not done                            
+                )
+                OR
+                ( FREQ = "YEARLY"
+                  AND
+                  IS NULL(BYDAY)
+                  AND
+                  DAYOFYEAR(DTSTART)>=start_dayofyear
+                  AND
+                  DAYOFYEAR(DTSTART)<=end_dayofyear
+                )
+              )
+            )
+          )
+          
+
+original pseudocode
+          
+        switch (RRULE)
+            case(NULL)
+                DTSTART <=(timestamp)start
+                and DTEND >=(timestamp)end
+            else
+                switch(FREQ)
+                    case(DAILY) //INTERVAL_VAL
+                        DTSTART <=(timestamp)start
+                        and UNTIL >=(timestamp)end
+                        and start+(INTERVAL_VAL- (start-DTSTART)mod INTERVAL_VAL) <= end
+                    case(WEEKLY)//BYDAY,INTERVAL_VAL,
+************
+
+                    case(MONTHLY)  //monthly by day, date
+                        switch(BYDAY)
+                            case(NULL) //monthly by date
+                                DTSTART <=(timestamp)start
+                                and UNTIL >=(timestamp)end
+                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
+                                and dayofmonth(DTSTART) >= start-firstdayofmonth
+                                and dayofmonth(DTSTART) <= end-firstdayofmonth
+                            else //monthly by day
+                                DTSTART <=(timestamp)start
+                                and UNTIL >=(timestamp)end
+                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
+                                and dayofmonth(BYDAY rule) >= start-firstdayofmonth
+                                and dayofmonth(BYDAY rule) <= end-firstdayofmonth
+                                
+                    case(YEARLY)
+                        DTSTART <=(timestamp)start
+                        and UNTIL >=(timestamp)end
+                        and dayofyear(DTSTART)>=start-firstdayofyear
+                        and dayofyear(DTSTART)<=end-firstdayofyear
+*/
+
+
+
