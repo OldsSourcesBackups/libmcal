@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.9 2000/01/28 01:40:24 markie Exp $ */
+/* $Id: mstore.c,v 1.10 2000/03/16 14:46:08 inan Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -433,6 +433,7 @@ mstore_fetch(CALSTREAM *stream, unsigned long id, CALEVENT **inevent)
 	while((event=read_event(calfile))) {
 		if(event->id==id) {
 			*inevent=event;
+			fclose(calfile);
 			return true;
 		}
 		calevent_free(event);
