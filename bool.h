@@ -1,4 +1,4 @@
-/*	$Id: bool.h,v 1.1 1999/12/02 08:01:39 zircote Exp $
+/*	$Id: bool.h,v 1.2 2000/06/27 22:17:14 askalski Exp $
  *
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -32,7 +32,7 @@
 #ifndef	_BOOL_H
 #define	_BOOL_H
 
-#ifndef	__cplusplus__
+#ifndef	__cplusplus
 typedef	enum { false, true } bool;
 #endif
 

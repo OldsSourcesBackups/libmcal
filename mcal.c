@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.7 2000/05/11 19:43:23 inan Exp $
+ *	$Id: mcal.c,v 1.8 2000/06/27 22:17:14 askalski Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -174,7 +174,7 @@ caladdr_out(const CALADDR *addr)
 	/* size-count and sanity-check all fields */
 	if (addr->host) {
 		/* sanity: host contains neither '/' nor '}' */
-		if (strchr(addr->host, '}') || strchr(addr->host, '/'))
+		if (strpbrk(addr->host, "}/"))
 			return NULL;
 		size += strlen(addr->host) + 2;
 
@@ -318,10 +318,33 @@ calevent_free(CALEVENT *event)
 }
 
 
-const char*
-calevent_getattr(CALEVENT *event, const char *name)
+bool
+calevent_valid(const CALEVENT *event)
 {
-	CALATTR		*attr;
+	int n = 0;
+
+	/* both must have date field set */
+	if (!dt_hasdate(&event->start) || !dt_hasdate(&event->end))
+		return false;
+
+	/* either none or both may have time field set */
+	if (dt_hastime(&event->start)) n++;
+	if (dt_hastime(&event->end)) n++;
+	if (n == 1)
+		return false;
+
+	/* start must precede end */
+	if (dt_compare(&event->start, &event->end) > 0)
+		return false;
+
+	return true;
+}
+
+
+const char*
+calevent_getattr(const CALEVENT *event, const char *name)
+{
+	const CALATTR	*attr;
 
 	for (attr = event->attrlist; attr; attr = attr->next)
 		if (!strcasecmp(attr->name, name))
@@ -694,7 +717,7 @@ calevent_next_recurrence(	const CALEVENT *event, datetime_t *first,
 		int		wday;
 
 
-		nth = estart.mday / 7 + 1;
+		nth = (estart.mday - 1) / 7 + 1;
 		wday = dt_dayofweek(&estart);
 
 		/* adjust estart to be the first candidate */
@@ -891,6 +914,8 @@ cal_append_addr(CALSTREAM *stream, const CALADDR *addr,
 		unsigned long *id, const CALEVENT *event)
 {
 	if (stream == NULL || stream->dead)
+		return false;
+	if (!calevent_valid(event))
 		return false;
 	return stream->driver->append(stream, addr, id, event);
 }

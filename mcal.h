@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.7 2000/05/11 19:43:23 inan Exp $
+ *	$Id: mcal.h,v 1.8 2000/06/27 22:17:14 askalski Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -292,8 +292,11 @@ CALEVENT*	calevent_new(void);
 /* Disposes of a CALEVENT, returns NULL for convenience. */
 CALEVENT*	calevent_free(CALEVENT *event);
 
+/* Check the validity of an event's fields. */
+bool		calevent_valid(const CALEVENT *event);
+
 /* Routines to set and fetch event attributes. */
-const char*	calevent_getattr(CALEVENT *event, const char *name);
+const char*	calevent_getattr(const CALEVENT *event, const char *name);
 bool		calevent_setattr(CALEVENT *event, const char *name,
 					const char *value);
 
