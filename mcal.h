@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.4 2000/01/25 03:08:10 markie Exp $
+ *	$Id: mcal.h,v 1.5 2000/02/28 00:42:14 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -383,6 +383,13 @@ bool		cal_append_addr(CALSTREAM *stream,
 				const CALADDR *addr,
 				unsigned long *id,
 				const CALEVENT *event);
+
+/* Save changes to an already existing event. If the event doesn't yet
+ * exist (it has uid 0) then cal_append is called. Returns the saved uid
+ * on success, and false on failure.
+ */
+bool		cal_store(	CALSTREAM *stream,
+			        CALEVENT *event);
 
 /* Removes the event with id of <id> from the folder.  Returns false on
  * error.
