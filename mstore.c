@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.11 2000/03/27 04:07:12 zircote Exp $ */
+/* $Id: mstore.c,v 1.12 2000/04/22 16:02:13 chuck Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -459,8 +459,11 @@ mstore_append(	CALSTREAM *stream, const CALADDR *addr,
 	if (strcasecmp(addr->folder, "INBOX"))
 		return false;
 
+	/* comment this out so that we can share calendars
 	if (DATA->folder_userbuf)
 		return false;
+	*/
+	
 	if (!dt_hasdate(&event->start))
 		return false;
 
