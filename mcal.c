@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.4 2000/01/22 02:47:09 markie Exp $
+ *	$Id: mcal.c,v 1.5 2000/01/25 03:08:10 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -923,6 +923,14 @@ cal_snooze(CALSTREAM *stream, unsigned long id)
 	return stream->driver->snooze(stream, id);
 }
 
+
+bool
+cal_store(CALSTREAM *stream, const CALEVENT *event)
+{
+        if (stream == NULL || stream->dead)
+                return false;
+        return stream->driver->store(stream, event);
+}
 
 /** Dummy Driver **/
 static bool		dummy_valid(const CALADDR *addr);

@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.3 2000/01/20 01:47:18 askalski Exp $
+ *	$Id: mcal.h,v 1.4 2000/01/25 03:08:10 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -35,7 +35,7 @@
 #include <stdarg.h>
 #include "bool.h"
 #include "datetime.h"
-
+#include "cal_misc.h"
 /* default folder, if none is specified */
 #define	DEFAULT_FOLDER	"INBOX"
 
@@ -44,6 +44,9 @@
 
 /* calendar library version */
 #define CALVER		"0.5"
+
+/* calendar library date */
+#define MCALVER		20000121
 
 /* structs */
 #define	CALDRIVER	struct cal_driver
@@ -216,6 +219,10 @@ CALDRIVER {
 	 */
 	bool		(*snooze)(	CALSTREAM *stream,
 					unsigned long id);
+	bool            (*store)(       CALSTREAM *stream, 
+					const CALEVENT *event);
+
+
 };
 
 
@@ -395,4 +402,5 @@ bool		cal_snooze(	CALSTREAM *stream,
  */
 const CALDRIVER*	cal_getdriver(const CALADDR *addr);
 
+#include "icalroutines.h"
 #endif

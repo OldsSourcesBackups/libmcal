@@ -1,4 +1,4 @@
-# 	$Id: Makefile.in,v 1.1 1999/12/02 08:01:39 zircote Exp $
+# 	$Id: Makefile.in,v 1.2 2000/01/25 03:08:10 markie Exp $
 
 CC=gcc
 FLEX=flex
@@ -10,7 +10,7 @@ INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
 
 CFLAGS=-O0 -Wall -g ${INCLUDE}
 
-LIBOBJS=mcal.o datetime.o $(DRIVER_LIBS)
+LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS)
 ALLOBJS=${LIBOBJS} tester.o
 OTHERLIBS=${OTHERLIBS}
 OTHERLIBDIR=${OTHERLIBDIR}
@@ -28,6 +28,9 @@ install: libmcal.a
 libmcal.a: $(LIBOBJS)
 	rm -f $(LIBCAL)
 	ar r $(LIBCAL) $(LIBOBJS)
+
+lex.ical_yy.c: icalscanner.lex
+	$(FLEX) $<
 
 tester: tester.o libmcal.a
 	gcc -Wall -g -o tester tester.o $(LIBCAL) -lcrypt
