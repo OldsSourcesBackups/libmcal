@@ -173,8 +173,6 @@ static void		mysqldrv_freestream(CALSTREAM *stream);
 static unsigned long mysqldrv_mysql_query(CALSTREAM *stream, const char *query);
 //static bool		mysqldrv_validuser(const char *username,const char *password);
 //static bool		mysqldrv_userexists(const char *username);
-static void 		mysqldrvout_datetime (char *buffer, const datetime_t *input);
-static void 		mysqldrvout_ulong (char *buffer, const unsigned long input);
 
 static bool		mysqldrv_valid ( const CALADDR *addr );
 static CALSTREAM*	mysqldrv_open (	CALSTREAM *stream,
@@ -463,7 +461,59 @@ mysqldrv_search_alarm(	CALSTREAM *stream, const datetime_t *when) {
 }
 
 bool
-mysqldrv_fetch(	CALSTREAM *stream, unsigned long id, CALEVENT **event){
+mysqldrv_fetch(	CALSTREAM *stream, unsigned long uid, CALEVENT **event){
+    bool error = false;
+    char *id;
+    char buffer [10000];
+    char temp_string [1000];
+    char folder[40];
+    MYSQL_RES *query_result;
+    MYSQL_ROW row;
+
+    strcpy (folder, DATA->user);
+cc_vlog("hi","");        
+    // get record id from uid
+    strcpy ( buffer, "SELECT \
+        ID, \
+        CLASS, \
+        DESCRIPTION,\
+        CONCAT(DATE_FORMAT(DTEND,'Ymd'),IF(DTEND_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTEND,'His'),'Z'),'')),\
+        CONCAT(DATE_FORMAT(DTSTART,'Ymd'),IF(DTSTART_VALUETYPE='DATE-TIME',CONCAT('T',DATE_FORMAT(DTSTART,'His'),'Z'),'')),\
+        SUMMARY, \
+        UID");
+    sprintf( temp_string," FROM %s_VEVENT WHERE UID=%lu", folder, uid );
+    strcat (buffer, temp_string);
+cc_vlog(buffer,"");
+
+    if ( mysqldrv_mysql_query(stream, buffer)==0 ) {
+        // the record exists in VEVENT
+
+        query_result = mysql_store_result( DATA );
+cc_vlog("hi","");
+        row = mysql_fetch_row( query_result );
+cc_vlog("hi","");
+        id = row[0];        
+cc_vlog("hi","");
+        (*event)->public = (strcmp(row[1],"PUBLIC")==0);
+cc_vlog("hi","");
+//       strcpy ((*event)->description, row[2]);
+cc_vlog("hi","");
+cc_vlog(row[1],"");
+cc_vlog(row[2],"");
+cc_vlog(row[3],"");
+cc_vlog(row[4],"");
+cc_vlog(row[5],"");
+cc_vlog(row[6],"");
+cc_vlog(row[7],"");
+        //row 5 6
+//        strcpy ((*event)->title, row[7]);
+        (*event)->id = atol(row[8]);
+        
+            
+
+        mysql_free_result( query_result );
+    } else {
+    }
     return false;
 }
 
@@ -480,7 +530,7 @@ mysqldrv_fetch(	CALSTREAM *stream, unsigned long id, CALEVENT **event){
     if ( var ) {                             \
         strcat ( fieldbuffer, (field) );     \
         strcat ( fieldbuffer, ", " );        \
-        sprintf ( temp_string, "%li", var);  \
+        sprintf ( temp_string, "%lu", var);  \
         strcat ( valbuffer, temp_string);    \
         strcat ( valbuffer, ", " );          \
     }                                        \
@@ -507,7 +557,6 @@ mysqldrv_fetch(	CALSTREAM *stream, unsigned long id, CALEVENT **event){
         }                                                                                      \
         strcat (valbuffer,"\', ");                                                             \
                                                                                                \
-        /* specify the value type if desired */                                                \
         if ( hasvaluetype ) {                                                                  \
             strcat ( fieldbuffer, (field) );                                                   \
             strcat ( fieldbuffer, "_VALUETYPE, " );                                            \
@@ -519,53 +568,49 @@ mysqldrv_fetch(	CALSTREAM *stream, unsigned long id, CALEVENT **event){
         }                                                                                      \
     }                                                                                          \
 }
-#define MAX(val1,val2) val1 > val2 ? val1 : val2
 bool
 mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALEVENT *event) {
     /* I'm using buffers in this function both for simplicity and to cut down the number of mallocs
      * this function is in danger of memory overruns if the query size grows alot without changing the 
      * buffer sizes, strcat doesn't do any memory checking.
      */
-    char buffer [10000];
-    char fieldbuffer [1000];
-    char valbuffer [9000];
-    bool error;
-    char error_text [100];
-    char temp_string[100];
-    bool append;
+    char buffer [10000] = "";
+    char fieldbuffer [1000] = "";
+    char valbuffer [9000] = "";
+    bool error = false;
+    char error_text [100] = "";
+    char temp_string[100] = "";
     char folder[40];
-    unsigned long auto_id;
+    unsigned long auto_id = false;
     CALATTR *attr;
+    char event_class[10];
+    int     start_day;
+    byday_t byday = BYDAY_INIT;
     
+    
+
+    /*
+     * SECTION 1: SET UP THE DATA
+     * In this section any data integrety checks and filling in field values are done
+     */
     strcpy (folder, DATA->user);
-
-    append = true;
-    // set the UID, this isn't the best way to do it though, not overly unique.
-    event->id = time(NULL);
-
-    strcpy ( fieldbuffer, "(" );
-    strcpy ( valbuffer , "(" );
-    // insert any data integrety checks here as each field is added to a buffer.
-    // required fields:    
-    STORE_LONG ( event->id, "UID" );
+    
+    if (!event->id) {
+        // set the UID, this isn't the best way to do it though, not overly unique.
+        event->id = time(NULL);
+    }
     
     if (event->public) {
-        strcpy ( temp_string, "PUBLIC" );
+        strcpy ( event_class, "PUBLIC" );
     } else {
-        strcpy ( temp_string, "PRIVATE" );
+        strcpy ( event_class, "PRIVATE" );
     }
-    STORE_STRING (temp_string, "CLASS" );
-    
+
     if (!dt_hasdate(&event->start)) {
         error = true;
         strcat (error_text,"6.x DTSTART required\n");
     }
-    STORE_DATE ( event->start, "DTSTART", true);
 
-    /*
-     * optional fields:
-     */
-     
     /* set end date if time but not date present */ 
     if (dt_hastime(&event->end) && !dt_hasdate(&event->end)) {
         if (dt_hasdate(&event->start)) {
@@ -575,41 +620,50 @@ mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALE
             strcat (error_text,"6x DTEND date required\n");
         }
     } 
-    STORE_DATE ( event->end, "DTEND", true);
 
+
+    /*
+     * SECTION 2: SET UP THE VEVENT QUERY
+     */
+    
+    STORE_LONG   ( event->id, "UID" );
+    STORE_STRING ( event_class , "CLASS" );
+    STORE_DATE   ( event->start, "DTSTART", true);
+    STORE_DATE   ( event->end, "DTEND", true);
     STORE_STRING ( event->title, "SUMMARY" );
     STORE_STRING ( event->description, "DESCRIPTION" );
-    
-    /*
-    STORE_INTEGER ( vevent_categories, "CATEGORIES" );
-    STORE_INTEGER ( vevent_rrule, "RRULE" );
-    STORE_INTEGER ( vevent_x_prop_list, "X_PROP_LIST" );
-    */
-    
-    /* cut ', ' off the ends of buffers.  Assumes lengths to be >=2 */
-    valbuffer[MAX( strlen(valbuffer)-2, 0)] = '\0';
-    fieldbuffer[MAX( strlen(fieldbuffer)-2, 0)] = '\0';    
-    strcat (fieldbuffer, ")");
-    strcat (valbuffer, ")");
 
-    sprintf ( buffer, "INSERT INTO %s_VEVENT %s VALUES %s", folder, fieldbuffer, valbuffer );
-    if (!(auto_id = mysqldrv_mysql_query(stream, buffer))){
+    if ( strlen(valbuffer) > 2 ) {
+        /* cut ', ' off the ends of buffers.*/
+        valbuffer[ strlen(valbuffer)-2 ] = '\0';
+        fieldbuffer[ strlen(fieldbuffer)-2 ] = '\0';    
+    } else {
         error = true;
-        strcat (error_text, "query error\n");
+        strcat (error_text, "No data to append to VEVENT\n");
     }
 
-    if (event->category) {
+    sprintf ( buffer, "INSERT INTO %s_VEVENT ( %s ) VALUES ( %s )", folder, fieldbuffer, valbuffer );
+    if (!(auto_id = mysqldrv_mysql_query(stream, buffer))){
+        error = true;
+        strcat (error_text, "VEVENT query error\n");
+    }
+    
+    /*
+     * SECTION 3: SET UP CONNECTED TABLES QUERIES
+     */
+
+    if (event->category && !error) {
         // this line will have to be expanded to pass through a token string once we support more than one category
         sprintf ( buffer, "INSERT INTO %s_CATEGORIES (VALUE_KEY, VALUE) VALUES (%lu, '%s')", folder, auto_id, event->category);
         mysqldrv_mysql_query( stream, buffer );
     }
 
-    if (event->alarm) {
+    if (event->alarm && !error) {
         sprintf ( buffer, "INSERT INTO %s_X_PROP (VALUE_KEY, NAME, VALUE) VALUES (%lu, '%s', %ld)", folder, auto_id, "X-ALARM", event->alarm);
         mysqldrv_mysql_query( stream, buffer );
     }
     
-    if (event->attrlist) {
+    if (event->attrlist && !error) {
         sprintf( buffer, "INSERT INTO %s_X_PROP (VALUE_KEY, NAME, VALUE) VALUES", folder);
         for (attr = event->attrlist; attr; attr = attr->next) {
             strcpy ( temp_string, buffer );
@@ -618,13 +672,9 @@ mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALE
         mysqldrv_mysql_query( stream, buffer );
     }
     
-    if ((event->recur_type) && (event->recur_type != RECUR_NONE)) {
-        int     start_day;
-        byday_t byday = BYDAY_INIT;
-        
-        sprintf( buffer, "INSERT INTO %s_RRULE", folder);
-        strcpy ( fieldbuffer, "(" );
-        strcpy ( valbuffer, "(" );
+    if ((event->recur_type) && (event->recur_type != RECUR_NONE) && !error) {       
+        fieldbuffer[0] = '\0';
+        valbuffer[0] = '\0';
 
 	STORE_LONG( auto_id, "VALUE_KEY" );
         STORE_INTEGER((int)event->recur_interval,"INTERVAL_VAL");
@@ -658,241 +708,81 @@ mysqldrv_append( CALSTREAM *stream, const CALADDR *addr, unsigned long *id, CALE
                 // just here to avoid compiler warnings
         }        
 
-        /* cut ', ' off the ends of buffers.  Assumes lengths to be >=2 */
-        valbuffer[MAX( strlen(valbuffer)-2, 0)] = '\0';
-        fieldbuffer[MAX( strlen(fieldbuffer)-2, 0)] = '\0';    
-        strcat (fieldbuffer, ")");
-        strcat (valbuffer, ")");
+        /* cut ', ' off the ends of buffers.  Assumes lengths to be >=2 (they have to be) */
+        valbuffer[ strlen(valbuffer)-2 ] = '\0';
+        fieldbuffer[ strlen(fieldbuffer)-2 ] = '\0';    
 
-        sprintf ( buffer, "INSERT INTO %s_RRULE %s VALUES %s", folder, fieldbuffer, valbuffer );
+        sprintf ( buffer, "INSERT INTO %s_RRULE ( %s ) VALUES ( %s )", folder, fieldbuffer, valbuffer );
         if (!(auto_id = mysqldrv_mysql_query(stream, buffer))){
             error = true;
-            strcat (error_text, "query error\n");
+            strcat (error_text, "RRULE query error\n");
         }
     }
 
     return !error;    
 }
-#undef MAX
 #undef STORE_STRING
 #undef STORE_LONG
 #undef STORE_DATE
 #undef STORE_INTEGER
 
+/*
+ * this function should have the field fetching tidyed up, mysql returns fixed length, 
+ * not null terminated, but this works for now.
+ */
+bool
+mysqldrv_remove( CALSTREAM *stream, unsigned long uid){
+    bool error = false;
+    char *id;
+    char buffer [10000];
+    char folder[40];
+    MYSQL_RES *query_result;
+    MYSQL_ROW temp_row;
 
-bool		mysqldrv_remove(	CALSTREAM *stream, unsigned long id){
-    return false;
+    strcpy (folder, DATA->user);
+        
+    // get record id from uid
+    sprintf ( buffer, "SELECT ID, DTSTART_VALUETYPE FROM %s_VEVENT WHERE UID=%lu", folder, uid );
+
+    if ( mysqldrv_mysql_query(stream, buffer) ) {
+        // the record exists in VEVENT
+        query_result = mysql_store_result( DATA );
+        temp_row = mysql_fetch_row( query_result );
+        id = temp_row[0];
+        mysql_free_result( query_result );
+        
+        sprintf (buffer, "DELETE FROM %s_VEVENT WHERE ID = %s", folder, id );
+        if (!(mysqldrv_mysql_query( stream, buffer )==0)) {
+            error = true;
+        }
+        sprintf (buffer, "DELETE FROM %s_CATEGORIES WHERE VALUE_KEY = %s", folder, id );
+        mysqldrv_mysql_query( stream, buffer );
+        sprintf (buffer, "DELETE FROM %s_X_PROP WHERE VALUE_KEY = %s", folder, id );
+        mysqldrv_mysql_query( stream, buffer );
+        sprintf (buffer, "DELETE FROM %s_RRULE WHERE VALUE_KEY = %s", folder, id );
+        mysqldrv_mysql_query( stream, buffer );
+    } else {
+        // the record doesn't exist
+        error = true;
+    
+    }
+    return !error;
 }
+
 bool		mysqldrv_snooze(	CALSTREAM *stream, unsigned long id){
     return false;
 }
 
-
-void
-mysqldrvout_datetime (char *buffer, const datetime_t *input) {
-    // this buffer size assumption follows from mysqldrv_store
-    char buffer2[9000];
-    strcpy (buffer2, buffer);
-    strcat (buffer2, "\'");
-        cc_vlog (buffer2,"");
-    if ( dt_hasdate(input) ) {
-        snprintf (buffer, 9000, "%s%04u-%02u-%02u", buffer2, input->year, input->mon, input->mday );        
-        if ( dt_hastime(input) ) {
-            snprintf (buffer, 9000, " %02u:%02u:%02u", input->hour, input->min, input->sec );
-        }
-    strcat (buffer,"\'");
-    }
-    cc_vlog (buffer,"");
-}
-
-void
-mysqldrvout_ulong ( char *buffer, const unsigned long input) {
-    // this buffer size assumption follows from mysqldrv_store
-    char buffer2[9000];
-    strcpy (buffer2, buffer);
-    snprintf ( buffer, 9000, "%s%li", buffer2, input);
-}
-
-#define	STORE_STRING(var, field) {      \
-    if ( var ) {                        \
-        strcat ( fieldbuffer, (field) );\
-        strcat ( fieldbuffer, ", " );   \
-        strcat ( valbuffer, "\'" );     \
-        strcat ( valbuffer, var);       \
-        strcat ( valbuffer, "\', " );   \
-    }                                   \
-}
-#define	STORE_LONG(var, field) {             \
-    if ( var ) {                             \
-        strcat ( fieldbuffer, (field) );     \
-        strcat ( fieldbuffer, ", " );        \
-        sprintf ( temp_string, "%li", var);  \
-        strcat ( valbuffer, temp_string);    \
-        strcat ( valbuffer, ", " );          \
-    }                                        \
-}
-#define	STORE_DATE(var, field, hasvaluetype) {                                                 \
-    if ( dt_hasdate(&var)) {                                                                   \
-        strcat ( fieldbuffer, (field) );                                                       \
-        strcat ( fieldbuffer, ", " );                                                          \
-        strcat ( valbuffer, "\'");                                                             \
-        sprintf ( temp_string, "%04u-%02u-%02u", (&var)->year, (&var)->mon, (&var)->mday );    \
-        strcat ( valbuffer, temp_string );                                                     \
-        if ( dt_hastime(&var) ) {                                                              \
-            sprintf ( temp_string, " %02u:%02u:%02u", (&var)->hour, (&var)->min, (&var)->sec );\
-            strcat ( valbuffer, temp_string );                                                 \
-        }                                                                                      \
-        strcat (valbuffer,"\', ");                                                             \
-                                                                                               \
-        /* specify the value type if desired */                                                \
-        if ( hasvaluetype ) {                                                                  \
-            strcat ( fieldbuffer, (field) );                                                   \
-            strcat ( fieldbuffer, "_VALUETYPE, " );                                            \
-            if (dt_hastime(&var)) {                                                            \
-                strcat ( valbuffer, "'DATE-TIME', ");                                          \
-            } else {                                                                           \
-                strcat ( valbuffer, "'DATE', " );                                              \
-            }                                                                                  \
-        }                                                                                      \
-    }                                                                                          \
-}
 bool
-mysqldrv_store(CALSTREAM *stream, CALEVENT *event) {
-    /* I'm using buffers in this function both for simplicity and to cut down the number of mallocs
-     * this function is in danger of memory overruns if the query size grows alot without changing the 
-     * buffer sizes, strcat doesn't do any memory checking.
-     */
-    char buffer [10000];
-    char fieldbuffer [1000];
-    char valbuffer [9000];
-    bool error;
-    char error_text [100];
-    char temp_string[100];
-    int  temp_int;
-    bool append;
-    MYSQL_RES *query_result;
-    MYSQL_ROW temp_row;
-    int vevent_categories;
-    int vevent_rrule;
-    int vevent_x_prop_key;
-    char auto_id[20];
-    char folder[40];
-    unsigned long a_id;
+mysqldrv_store( CALSTREAM *stream, CALEVENT *event) {
+    bool    error;
+    unsigned long id;
+    CALADDR addr;
     
-    strcpy (folder, DATA->user);
-
-/*
-cat
-alarm
-rec
-unknown
-*/    
-
-    if (!event->id) {
-        append = true;
-        // set the UID, this isn't the best way to do it though, not overly unique.
-        event->id = time(NULL);
-        strcpy (auto_id, "LAST_INSERT_ID()");
-    } else {
-        append = false;
-        // get the record id
-/*
-        strcpy ( buffer, "SELECT ID FROM ");
-        strcat ( buffer, folder);
-        strcat ( buffer, "_VEVENT WHERE UID = " );
-        sprintf ( temp_string, "%li", event->id );
-        strcat ( buffer, temp_string );
-        error = error || mysqldrv_mysql_query(stream, buffer);
-        query_result = mysql_store_result( DATA );
-        temp_row = mysql_fetch_row( query_result );
-        sprintf ( auto_id, "%ul", temp_row[0] );
-        mysql_free_result( query_result );
-*/
-    }
-
-    strcpy ( fieldbuffer, "(" );
-    strcpy ( valbuffer , "(" );
-    // insert any data integrety checks here as each field is added to a buffer.
-    // required fields:    
-    STORE_LONG ( event->id, "UID" );
-    
-    if (event->public) {
-        strcpy ( temp_string, "PUBLIC" );
-    } else {
-        strcpy ( temp_string, "PRIVATE" );
-    }
-    STORE_STRING (temp_string, "CLASS" );
-    
-    if (!dt_hasdate(&event->start)) {
-        error = true;
-        strcat (error_text,"6.x DTSTART required\n");
-    }
-    STORE_DATE ( event->start, "DTSTART", true);
-
-    /*
-     * optional fields:
-     */
-     
-    /* set end date if time but not date present */ 
-    if (dt_hastime(&event->end) && !dt_hasdate(&event->end)) {
-        if (dt_hasdate(&event->start)) {
-            dt_setdate(&event->end,	event->start.year, event->start.mon, event->start.mday);
-        } else {
-            error = true;
-            strcat (error_text,"6x DTEND date required\n");
-        }
-    } 
-    STORE_DATE ( event->end, "DTEND", true);
-
-    STORE_STRING ( event->title, "SUMMARY" );
-    STORE_STRING ( event->description, "DESCRIPTION" );
-    
-    /*
-    STORE_INTEGER ( vevent_categories, "CATEGORIES" );
-    STORE_INTEGER ( vevent_rrule, "RRULE" );
-    STORE_INTEGER ( vevent_x_prop_list, "X_PROP_LIST" );
-    */
-    
-    /* cut ', ' off the ends of buffers.  Assumes lengths to be >=2 */
-    valbuffer[strlen(valbuffer)-2] = '\0';
-    fieldbuffer[strlen(fieldbuffer)-2] = '\0';    
-    strcat (fieldbuffer, ")");
-    strcat (valbuffer, ")");
-
-    strcpy ( buffer, "REPLACE INTO " );    
-    strcat ( buffer, folder );
-    strcat ( buffer, "_VEVENT" );
-    strcat ( buffer, fieldbuffer );
-    strcat ( buffer, " VALUES " );
-    strcat ( buffer, valbuffer );
-//    strcpy ( buffer, "UPDATE http_VEVENT SET SUMMARY = 'wow, hello' WHERE UID=17");l
-    cc_vlog (buffer,"");    
-    if (!(a_id = mysqldrv_mysql_query(stream, buffer))){
-        error = true;
-        strcat (error_text, "query error\n");
-    }
-
-    if (event->category) {
-        sprintf ( buffer, "DELETE FROM %s_CATEGORIES WHERE VALUE_KEY = %lu", folder, a_id );
-        mysqldrv_mysql_query( stream, buffer );
-        // this line will have to be expanded to pass through a token string once we support more than one category
-        sprintf ( buffer, "INSERT INTO %s_CATEGORIES (VALUE_KEY, VALUE) VALUES (%lu, '%s')", folder, a_id, event->category);
-        mysqldrv_mysql_query( stream, buffer );
+    error = !mysqldrv_remove ( stream, event->id );
+    if (!error) {
+        error = !mysqldrv_append ( stream, &addr, &id, event);
     }
     
-
-/*    
-    what with CATEGORIES
-    RRULE T/F
-     
-    INSERT INTO ****_VEVENT (UID, CLASS, DTSTART, DTEND, CATEGORIES, SUMMARY, DESCRIPTION)
-    
-    X-PROP
-    X-ALARM
-*/
-
-return !error;    
+    return !error;
 }
-#undef STORE_STRING
-#undef STORE_LONG
-#undef STORE_DATE
