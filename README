@@ -1,0 +1,41 @@
+ *	$Id: README,v 1.1 1999/12/02 08:01:39 zircote Exp $
+mcal stands for Modular Calendar Access Library.
+
+libmcal is a C library for accessing calendars. It's written
+to be very modular, with plugable drivers.
+
+once the library is compiled, calendar clients can be wirrten very easily.
+
+Compilation:
+
+To compile libmcal, you need to first have calendar drivers in place.
+The calendar drivers are ina seperate package, and should be untarred
+and compiled under the mail libmcal directory.
+
+i.e.:
+
+/home/musone/libmcal     <-- libmcal base compile directory
+/home/musone/libmcal/icap   <-- icap driver for libmcal
+/home/musone/libmcal/dummy  <--- dummy driver for libmcal
+
+Once the drivers are compiled, run configure in the libmcal directory.
+
+You should pass in --with-[DRIVERNAME] for each driver you want compiled in.
+
+For example, in the above sample driver installation, to enable both driver:
+
+>./configure --with-icap --with-dummy
+
+You can also specify an alternative driver directory for each driver:
+
+>./configure --with-icap=../drivers/icap --with-dummy=testdrivers/dummy
+
+
+Once configure is run, type:
+
+
+>make
+
+libmcal.a should then be compiled.
+
+

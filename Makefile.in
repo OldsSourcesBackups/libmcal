@@ -1,0 +1,46 @@
+# 	$Id: Makefile.in,v 1.1 1999/12/02 08:01:39 zircote Exp $
+
+CC=gcc
+FLEX=flex
+
+
+@BOOTSTRAP@
+
+INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
+
+CFLAGS=-O0 -Wall -g ${INCLUDE}
+
+LIBOBJS=mcal.o datetime.o $(DRIVER_LIBS)
+ALLOBJS=${LIBOBJS} tester.o
+OTHERLIBS=${OTHERLIBS}
+OTHERLIBDIR=${OTHERLIBDIR}
+
+LIBCAL=libmcal.a
+
+all: libmcal.a
+
+install: libmcal.a
+	mkdir /usr/local/mcal
+	mkdir /usr/local/mcal/lib
+	mkdir /usr/local/mcal/include
+	cp libmcal.a /usr/local/mcal/lib
+	cp mcal.h bool.h datetime.h drivers.h /usr/local/mcal/include
+libmcal.a: $(LIBOBJS)
+	rm -f $(LIBCAL)
+	ar r $(LIBCAL) $(LIBOBJS)
+
+tester: tester.o libmcal.a
+	gcc -Wall -g -o tester tester.o $(LIBCAL) -lcrypt
+
+clean:
+	rm -f *.o $(LIBCAL) tester  
+
+distclean: clean
+	rm -f  config.cache  config.status config.log Makefile drivers.c drivers.h bootstrap.in
+
+
+dep: depend
+
+depend:
+	makedepend $(INCLUDE) -- $(ALLOBJS:%.o=%.c) >& /dev/null
+

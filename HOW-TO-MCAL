@@ -1,0 +1,50 @@
+
+$Id: HOW-TO-MCAL,v 1.1 1999/12/02 08:01:39 zircote Exp $
+
+MCAL HowTo- 11/19/99
+Robert Allen allenb@home-networking.org
+
+Download the required Files:
+	libmcal.tar.gz
+	mcal-drivers.tar.gz
+	
+unzip and untar the files:
+
+on linux you may perform both steps by adding the -x option
+
+	[me@home]$ tar -xvzf libmcal.tar.gz
+	[me@home]$ tar -xvzf mcal-drivers.tar.gz
+
+Copy the driver directories into the libmcal directory:
+
+	[me@home]$ cp mstore ./libmcal
+	[me@home]$ cp icap ./libmcal
+	
+Enter the mstore directory
+	[me@home]$ cd libmcal/mstore
+Next execute make:
+	[me@home]$ make
+Next move to the icap directory and repeat the previos steps:
+	[me@home]$ cd ../icap
+Next execute make:
+	[me@home]$ make
+
+Now move into the libmcal directory and execute the configure script with the desired options:
+To learn about the available options :
+	[me@home]$ ./configure --help
+Now to continue:
+	[me@home]$ ./configure --with-mstore --with-icap
+Now finish with the final compilation:
+	[me@home]$ make
+	
+If you are planning to use these drivers with PHP 3 or 4 you will inclued the following tag in the configure schema:
+	--with-mcal=../path-to-libmcal
+
+Now you will need to create the local mstore directory:
+
+	[me@home]$ mkdir /var/calendar
+	
+Next set the permissions on the new directory:
+	[me@home]$ chmod 1777 /var/calendar
+
+Happy Planning!

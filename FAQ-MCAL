@@ -1,0 +1,73 @@
+
+$Id: FAQ-MCAL,v 1.1 1999/12/02 08:01:39 zircote Exp $
+
+MCAL FAQ - 11/19/99
+Robert Allen allenb@home-networking.org
+
+
+1: I am unable to open a stream into the mstore directory what is wrong?
+
+o Check the permissions on the calendar directory.
+	To Properly set these permissions execute the following command:
+	
+	[me@home]$ chown -R nobody.nobody /var/calendar
+	[me@home]$ chmod 1777 /var/calendar
+
+
+2: How do I create a passwd file for the local mstore driver?
+
+o Using the Apache htpasswd utility you may create the mpasswd file with the command below
+	[me@home]$ htpasswd -c /etc/mpasswd username
+	
+	To add or update this file you would execute as follows:
+	[me@home]$ htpasswd /etc/mpasswd username
+
+	
+3: How do I get support?
+
+o Currently there is a user list that has been provided by Chek.Com for public discussion
+   to subscribe send an email to: blah@chek.com
+
+
+4: What is MCAL?
+
+o The MCAL library is very similar to the c-client IMAP library. It offers a common 
+   simple interface for accessing calendars that can be stored in many different 
+   formats, both local and remote formats are supported. 
+   
+   
+5: What objects can MCAL Support?
+
+o Some of MCAL's supported object features are: 
+	-Alarms (triggers) which can be set to go off any number of minutes before the event. 
+	-Class values (Public/Private) 
+	-Start and End Dates 
+	-Recurrence (This event should re-occur every Thursday..etc..) 
+	-Calendar sharing. 
+	
+	
+6: Where is the CVS Repository?
+
+o :pserver:allen@www.totalsite.org:/repository
+	- For CVSWeb Access Please Visit http://www.totalsite.org/cgi-bin/cvs
+	- For CVS Issues please visit http://www.cyclic.com
+	
+	
+7: How Do I get CVS write access?
+
+o To apply for CVS write access send an email to Mark Musone : musone@edgeglobal.com
+
+
+8: What are the expandable possibilities for libmcal?
+
+o Currently there is discussion involving concepts that would revolutionize the way dates and 
+   schedules are handled on many levels.
+	- Plans are being discussed to create a SQL Driver for libmcal which would enable
+	  database storage of calendars.
+	- Conceptual discussion is underway for the development of a "cron" aware interface
+	  which in theory would allow the unix scheduling  daemon to access it's scheduled 
+	  events from a icap based calendar.
+	- Plans are being made to start a Perl Module for the use of libmcal.
+	- Discussion for the development of a MS Outlook plugin.
+	- In summary the way libmcal is designed it offers a robust means to create 
+	  drivers and interface for an unlimited number of possibilities.

@@ -1,0 +1,10 @@
+	$Id: CHANGELOG,v 1.1 1999/12/02 08:01:39 zircote Exp $
+
+CHANGELOG:
+
+Version 0.99
+-Corrected Versioning Mistake in libmcal.h - allen
+- Prepared for interim version release 0.99a -allen
+- Added Changelog -allen
+- Added -ldflags changes to Makefile -markie
+- Added to CVS Repository -allen
