@@ -1,6 +1,6 @@
 /*
 
-	$Id: mcal.c,v 1.1 1999/12/02 08:02:04 zircote Exp $
+	$Id: mcal.c,v 1.2 2000/01/19 18:57:49 markie Exp $
 
     mcal - libmcal powered cal replacement
     Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -270,7 +270,7 @@ int main(int argc, char **argv)
      for(i=0;i<eventlistsize;i++)
        {
 	 cal_fetch(stream,eventlist[i],&event);
-	 printf("uid: %d recur_type: %d\n",eventlist[i],event->recur_type);
+	 printf("uid: %ld recur_type: %d\n",eventlist[i],event->recur_type);
 	 if(event->recur_type!=RECUR_NONE)
 	   {
 	   	datetime_t clamp = startdate;
@@ -413,6 +413,7 @@ else
      cal_close(stream,0);
 
    }
+return(0);
 }
 
 void
