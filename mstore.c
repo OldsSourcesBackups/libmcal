@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.20 2001/03/20 16:40:52 rufustfirefly Exp $ */
+/* $Id: mstore.c,v 1.21 2001/05/07 17:37:10 chuck Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +26,6 @@
 
 static void		mstore_freestream(CALSTREAM *stream);
 static bool		mstore_validuser(const char *username,const char *password);
-static bool		mstore_userexists(const char *username);
 
 static bool		mstore_valid(const CALADDR *addr);
 static CALSTREAM*	mstore_open(	CALSTREAM *stream,
@@ -249,36 +248,6 @@ login_err:
 	pamh = NULL;
 	return false;
 #endif /* ! USE_PAM */
-}
-
-
-bool
-mstore_userexists(const char *username)
-{
-  FILE *mpasswd;
-  char line[1000];
-  char *musername,*mpassword;
-  mpasswd=fopen(MPASSWD_PATH,"r");
-  if(!mpasswd)
-    {
-      printf("Error! couldn't open mpasswd file!\n");
-      exit(1);
-    }
-  while(fgets(line,900,mpasswd))
-    {
-      if(line[strlen(line)-1]=='\n') line[strlen(line)-1]=0x00;
-      musername=line;
-      mpassword=strchr(line,':');
-      *mpassword=0x00;
-      mpassword++;
-      if(!strcmp(username,musername))
-	{
-	      fclose(mpasswd);
-	      return true;
-	}
-    }
-	fclose(mpasswd);
-      return false;
 }
 
 
@@ -562,10 +531,6 @@ mstore_search_range(	CALSTREAM *stream,
 bool
 mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 {
-	datetime_t	start;
-	datetime_t	end;
-	long		alarm = 0;
-	unsigned long	id = 0;
 	CALEVENT	*event;
 	FILE		*calfile;
 	char		userpath[1000];
@@ -577,12 +542,13 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	    exit(1);
 	}
 	rewind(calfile);
-	while((event=read_event(calfile))) {
-		if (dt_roll_time(&(event->start), 0, -alarm, 0) &&
-			dt_compare(&(event->start),&start)<=0 &&
-			dt_compare(&end,&(event->end)) <=0)
+	while ((event = read_event(calfile))) {
+		if (event->alarm &&
+		    dt_roll_time(&(event->start), 0, -(event->alarm), 0) &&
+		    dt_compare(&(event->start), when) <= 0 &&
+		    dt_compare(when, &(event->end)) <=0)
 		{
-			cc_searched(id);
+			cc_searched(event->id);
 		}
 		calevent_free(event);
 	}
