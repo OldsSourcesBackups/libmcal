@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.4 1999/12/13 19:14:27 zircote Exp $ */
+/* $Id: mstore.c,v 1.5 2000/01/25 03:08:11 markie Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +41,9 @@ static bool		mstore_append(	CALSTREAM *stream,
 static bool		mstore_remove(	CALSTREAM *stream,
 						unsigned long id);
 static bool		mstore_snooze(	CALSTREAM *stream,
-						unsigned long id);
+					unsigned long id);
+static bool             mstore_store(   CALSTREAM *stream, 
+					const CALEVENT *modified_event);
 CALDRIVER mstore_driver =
 {
 	mstore_valid,
@@ -54,6 +56,7 @@ CALDRIVER mstore_driver =
 	mstore_append,
 	mstore_remove,
 	mstore_snooze,
+	mstore_store,
 };
 
 
@@ -521,3 +524,51 @@ mstore_remove(CALSTREAM *stream, unsigned long id)
 
 	return true;
 }
+
+bool
+mstore_store(CALSTREAM *stream, const CALEVENT *modified_event)
+{
+  CALEVENT        *event;
+  FILE            *calfile;
+  FILE            *tmpfile;
+  char            calpath[1000];
+  char            tmppath[1000];
+  
+if(!modified_event->id)
+  return false;
+
+ snprintf(calpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
+ snprintf(tmppath,900,"%s/%s.tmp",DATA->base_path,DATA->folder_user);
+  calfile = fopen(calpath,"a+");
+  if(!calfile)
+    {
+      printf("Error! couldn't open calendar file!\n");
+      exit(1);
+    }
+  rewind(calfile);
+  tmpfile = fopen(tmppath, "w");
+  if(!tmpfile)
+    {
+      printf("Error! couldn't open temp calendar file!\n");
+      exit(1);
+    }
+  
+        while((event=read_event(calfile))) {
+	  if (event->id == modified_event->id)
+	    {
+	    (const *)event = modified_event;         
+	  /*is more required here to assign objects, a loop through all the properties*/
+	    /*    We actually only want to modify any individual property, not the whole thing..
+		  TODO */
+	    }
+	  write_event(tmpfile, event);
+	  calevent_free(event);
+        }
+	
+        fclose(calfile);
+        fclose(tmpfile);
+        rename(tmppath, calpath);
+	
+        return true;
+}
+
