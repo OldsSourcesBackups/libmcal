@@ -1,8 +1,8 @@
-# $Id: Makefile,v 1.1 2000/04/01 03:40:05 inan Exp $
+# $Id: Makefile,v 1.2 2001/04/16 18:07:15 rufustfirefly Exp $
 
 CC=gcc
 FLEX=flex
-INCLUDE=-I..
+INCLUDE=-I.. -I../libmcal
 CFLAGS=-O0 -Wall -g $(INCLUDE)
 ALLOBJS=mysqldrv.o
 TARGET=mysqldrv_driver.o
