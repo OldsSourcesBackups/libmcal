@@ -1,5 +1,6 @@
+
 /*
- *	$Id: mcal.h,v 1.8 2000/06/27 22:17:14 askalski Exp $
+ *	$Id: mcal.h,v 1.9 2000/12/21 15:41:47 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
