@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.18 2001/01/09 03:26:48 markie Exp $ */
+/* $Id: mstore.c,v 1.19 2001/03/16 19:30:42 chuck Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -172,8 +172,6 @@ bool
 mstore_valid(const CALADDR *addr)
 {
 	if (!addr->proto || strcasecmp(addr->proto, "mstore"))
-		return false;
-	if (addr->user && !mstore_userexists(addr->user))
 		return false;
 	return true;
 }
