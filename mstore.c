@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.2 1999/12/06 23:40:08 zircote Exp $ */
+/* $Id: mstore.c,v 1.3 1999/12/07 23:02:56 zircote Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -118,6 +118,7 @@ mstore_validuser(const char *username,const char *password)
 	    }
 	}
     }
+	fclose(mpasswd);
       return false;
 }
 
@@ -147,6 +148,7 @@ mstore_userexists(const char *username)
 	      return true;
 	}
     }
+	fclose(mpasswd);
       return false;
 }
 
@@ -314,8 +316,8 @@ mstore_search_range(	CALSTREAM *stream,
 			const datetime_t *end)
 {
 	CALEVENT	*event;
-	datetime_t	xstart = DT_INIT;
-	datetime_t	xend = DT_INIT;
+	datetime_t	_start = DT_INIT;
+	datetime_t	_end = DT_INIT;
 	FILE *calfile;
 	char userpath[1000];
 	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
@@ -326,18 +328,23 @@ mstore_search_range(	CALSTREAM *stream,
 	    exit(1);
 	  }
 	rewind(calfile);
-	dt_setdate(&xstart, start->year, start->mon, start->mday);
-	dt_setdate(&xend, end->year, end->mon, end->mday);
+
+	if (start)
+		dt_setdate(&_start, start->year, start->mon, start->mday);
+	if (end)
+		dt_setdate(&_end, end->year, end->mon, end->mday);
+
 	while((event=read_event(calfile))) {
 		dt_cleartime(&event->start);
 		dt_cleartime(&event->end);
-		if(dt_compare(&(event->start),&xstart)>=0 &&
-			dt_compare(&(event->start),&xend) <=0)
+		if(	(!start || dt_compare(&(event->start),&_start) >=0) &&
+			(!end || dt_compare(&(event->start),&_end) <= 0))
 		{
 			cc_searched(event->id);
 		}
 		calevent_free(event);
 	}
+	fclose(calfile);
 	return true;
 }
 
@@ -370,6 +377,7 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 		}
 		calevent_free(event);
 	}
+	fclose(calfile);
 	return true;
 }
 
@@ -431,6 +439,8 @@ mstore_append(	CALSTREAM *stream, const CALADDR *addr,
 
 	fclose(calfile);
 
+	*id = myevent.id;
+
 	return true;
 }
 
@@ -467,8 +477,10 @@ mstore_snooze(CALSTREAM *stream, unsigned long id)
 		calevent_free(event);
 	}
 
+	fclose(calfile);
+	fclose(tmpfile);
 	rename(tmppath, calpath);
-
+	
 	return true;
 }
 
@@ -503,7 +515,8 @@ mstore_remove(CALSTREAM *stream, unsigned long id)
 			write_event(tmpfile, event);
 		calevent_free(event);
 	}
-
+	fclose(calfile);
+	fclose(tmpfile);
 	rename(tmppath, calpath);
 
 	return true;
