@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.6 2000/02/27 05:01:54 inan Exp $
+ *	$Id: mcal.c,v 1.7 2000/05/11 19:43:23 inan Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -750,6 +750,18 @@ first_day_not_before(int mask, weekday_t *clamp, weekday_t weekstart)
 	return false;
 }
 
+bool
+cal_create(CALSTREAM *stream,const char *calendar) {
+	bool output;
+	
+	if (stream == NULL) {
+		output = false;
+	} else {
+		output = stream->driver->create(stream, calendar);
+	}
+	
+	return output;
+}
 
 bool
 cal_valid(const char *address)
@@ -950,6 +962,7 @@ static CALSTREAM*	dummy_open(	CALSTREAM *stream,
 					const CALADDR *addr, long options);
 static CALSTREAM*	dummy_close(CALSTREAM *stream, long options);
 static bool		dummy_ping(CALSTREAM *stream);
+static bool		dummy_create(CALSTREAM *stream, const char *calendar);
 static bool		dummy_search_range(	CALSTREAM *stream,
 						const datetime_t *start,
 						const datetime_t *end);
@@ -973,6 +986,7 @@ const CALDRIVER dummy_driver =
 	dummy_open,
 	dummy_close,
 	dummy_ping,
+	dummy_create,
 	dummy_search_range,
 	dummy_search_alarm,
 	dummy_fetch,
@@ -1007,6 +1021,12 @@ dummy_close(CALSTREAM *stream, long options)
 
 bool
 dummy_ping(CALSTREAM *stream)
+{
+	return false;
+}
+
+bool
+dummy_create(CALSTREAM *stream, const char *calendar)
 {
 	return false;
 }

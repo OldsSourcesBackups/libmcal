@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.6 2000/03/27 04:00:33 zircote Exp $
+ *	$Id: mcal.h,v 1.7 2000/05/11 19:43:23 inan Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -142,6 +142,15 @@ CALADDR {
 	size_t			bufsize;	/* buffer size */
 };
 
+/* calendar stream struct */
+CALSTREAM {
+	const CALDRIVER		*driver;	/* stream driver */
+	CALADDR			*addr;		/* folder address */
+	bool			dead;		/* dead stream? */
+	weekday_t		startofweek;	/* first day of week */
+	void			*data;		/* driver-specific data */
+};
+
 
 /* calendar driver structure */
 CALDRIVER {
@@ -169,7 +178,11 @@ CALDRIVER {
 
 	/* return true if the stream is still alive */
 	bool		(*ping)(	CALSTREAM *stream);
-
+	
+	/* return true if calendar created ok */
+	bool		(*create)(	CALSTREAM *stream,
+					const char *calendar);
+					
 	/* search the current folder for events between <start> and
 	 * <end> (inclusive.)  if either lacks a date or is NULL, that
 	 * bound will not be checked.  if both lack a date or are NULL,
@@ -226,14 +239,6 @@ CALDRIVER {
 };
 
 
-/* calendar stream struct */
-CALSTREAM {
-	const CALDRIVER		*driver;	/* stream driver */
-	CALADDR			*addr;		/* folder address */
-	bool			dead;		/* dead stream? */
-	weekday_t		startofweek;	/* first day of week */
-	void			*data;		/* driver-specific data */
-};
 
 
 /** calendar client callbacks **/
@@ -322,7 +327,10 @@ void		calevent_next_recurrence(	const CALEVENT *event,
  */
 bool		first_day_not_before(	int mask, weekday_t *clamp,
 					weekday_t weekstart);
-
+/* Creates a new calendar 
+ */
+bool		cal_create(CALSTREAM *stream,const char *calendar); 
+ 
 /* Returns true if the address is valid for any of the calendar drivers */
 bool		cal_valid(const char *address);
 

@@ -1,5 +1,5 @@
 /*
- *	$Id: tester.c,v 1.1 1999/12/02 08:01:40 zircote Exp $
+ *	$Id: tester.c,v 1.2 2000/05/11 19:43:23 inan Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -37,6 +37,7 @@
 #define	TEST(text)	{printf("Testing [%s]... ", (text)); fflush(stdout);}
 #define	PASS		printf("PASS\n");
 #define	PASSALL		return 1;
+//#define	FAIL		printf("FAIL\n"); 
 #define	FAIL		{printf("FAIL\n"); return 0;}
 #define	IGN		printf("IGNORED\n");
 
@@ -44,6 +45,8 @@ static int		test_datetime(void);
 static int		test_parse_addr(void);
 static int		test_cal(void);
 static int		test_icap(void);
+static int		test_mysql(void);
+
 
 static const char*	login_user = "askalski@chek.com";
 
@@ -53,6 +56,11 @@ static const char*	login_user = "askalski@chek.com";
 int
 main(void)
 {
+	if (!test_mysql()) {
+		printf("FAIL: test_mysql()\n");
+		return 1;
+	}
+/*	
 	if (!test_datetime()) {
 		printf("FAIL: test_datetime()\n");
 		return 1;
@@ -72,10 +80,131 @@ main(void)
 		printf("FAIL: test_icap()\n");
 		return 1;
 	}
-
+*/
 	printf("All tests PASS.\n");
 
 	return 0;
+}
+
+int
+test_mysql(void)
+{
+	CALSTREAM		*stream;
+	CALEVENT		*event;
+	unsigned long		id;
+	bool			good;
+	datetime_t		when;
+	
+
+
+
+	TEST("cal_open");
+	stream = cal_open(NULL, "{localhost/mysql}", 0);
+	if (stream == NULL) FAIL;
+	PASS;
+
+	TEST("cal_ping");
+	id = cal_ping( stream );
+	if (id == false) FAIL;
+	PASS;
+
+	TEST("cal_create");
+	id = cal_create( stream, "http" );
+	if (id == false) FAIL;
+	PASS;
+
+	TEST("cal_append");
+	event = calevent_new();
+	dt_setdate(&event->start, 2000, APRIL, 1);
+	dt_setdate(&event->end, 2000, APRIL, 22);
+	dt_settime(&event->end, 12, 11, 10);
+	event->category = strdup("Dinner");
+	event->title = strdup("chicken");
+	event->description = strdup("Is this working?");
+	event->id = 1420; 
+	event->recur_type = RECUR_WEEKLY;
+        event->recur_data.weekly_wday = M_MONDAY+M_FRIDAY;
+        event->recur_interval = 2;
+        dt_setdate(&event->recur_enddate, 2001, MAY, 3);
+        event->alarm = 1000;
+	good = cal_append(stream, "<>", &id, event);
+	if (!good) FAIL;
+	printf("{Appended %lu}", event->id);
+	id = event->id;
+	calevent_free(event);
+	PASS;
+	
+	TEST("cal_store");
+	event = calevent_new();
+	dt_setdate(&event->start, 2000, APRIL, 21);
+	dt_setdate(&event->end, 2000, APRIL, 22);
+	dt_settime(&event->end, 12, 11, 10);
+	event->category = strdup("Dinner");
+	event->title = strdup("chicken");
+	event->description = strdup("Sure is!");
+        event->id = id;
+        event->recur_type = RECUR_DAILY;
+        event->recur_interval = 1;
+        dt_setdate(&event->recur_enddate, 2000, MAY, 3);
+        event->alarm = 1000;
+	good = cal_store(stream, event);
+	if (!good) FAIL;
+	printf("{Stored %lu}", event->id);
+	id = event->id;
+	calevent_free(event);
+	PASS;
+
+/*	
+	TEST("cal_fetch");
+	event = calevent_new();
+	if (!cal_fetch(stream, 40, &event)) FAIL;
+	printf("Event:%s", event->description);
+	calevent_free(event);
+	PASS;
+*/
+	TEST("cal_fetch");
+	event = calevent_new();
+	if (!cal_fetch(stream, id, &event)) FAIL;
+	printf("Event:%s", event->description);
+	calevent_free(event);
+	PASS;
+
+
+	TEST("cal_search_range");
+	event = calevent_new();
+	dt_setdate(&event->start, 2000, APRIL,21);
+	dt_setdate(&event->end, 2000, APRIL, 21);
+	if (!cal_search_range(stream, &(event->start), &(event->end))) FAIL;
+	calevent_free(event);
+	PASS;
+
+	TEST("cal_snooze");
+	event = calevent_new();
+	if (!cal_fetch(stream, id, &event)) FAIL;
+	printf("Event:%lu", event->alarm);
+	if (!cal_snooze(stream, id)) FAIL;
+	if (!cal_fetch(stream, id, &event)) FAIL;
+	printf("Event:%lu", event->alarm);
+	calevent_free(event);
+	PASS;
+
+	TEST("cal_search_alarm");
+	dt_setdate(&when, 2000, APRIL, 20);
+	dt_settime(&when, 0, 0, 0);
+	if (!cal_search_alarm(stream, &when)) FAIL;
+	PASS;
+
+	TEST("cal_remove");
+	if (!cal_remove(stream, id)) FAIL;
+	PASS;
+
+	TEST("cal_close");
+	stream = cal_close(stream, 0);
+	if (stream != NULL) FAIL;
+	PASS;
+
+
+	PASSALL;
 }
 
 
@@ -202,7 +331,7 @@ test_cal(void)
 	PASS;
 
 	TEST("cal_open");
-	stream = cal_open(NULL, "{icap.chek.com/icap}<>", 0);
+	stream = cal_open(NULL, "{icap.chek.com/icap}", 0);
 	if (stream == NULL) FAIL;
 	PASS;
 
@@ -338,8 +467,8 @@ void
 cc_login(const char **username, const char **password)
 {
 	printf("{Login}");
-	*username = login_user;
-	*password = "asdf";
+	*username = "http";
+	*password = "spj904";
 }
 
 
