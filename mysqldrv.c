@@ -13,64 +13,108 @@
 #define	DATA	((MYSQL*) stream->data)
 
 #define VEVENT_TABLE "_VEVENT (
-           ATTACH                  INTEGER,
-           ATTENDEE                INTEGER,
-           CATEGORIES              INTEGER,
-           CLASS                   INTEGER,                /* Max 1 per VEVENT*/ 
-           COMMENT                 INTEGER,
-           CONTACT                 INTEGER,
-           CREATED                 INTEGER,                /* Max 1 per VEVENT*/ 
-           DESCRIPTION             TEXT,                   /* Max 1 per VEVENT*/ 
-           DESCRIPTION_ALTREP      VARCHAR(255),                
-           DESCRIPTION_LANGUAGE    VARCHAR(255),                
-           DESCRIPTION_XPARAM      INTEGER,                /* VALUE_KEY */
-           DTEND                   TIMESTAMP(14) NOT NULL, /* Max 1 per VEVENT no DURATION*/
-           DTEND_VALUETYPE         ENUM(\"DATE-TIME\",\"DATE\") DEFAULT \"DATE-TIME\",
-           DTEND_TZID              TEXT,
-           DTEND_XPARAM            INTEGER,                /* VALUE_KEY */   
-           DTSTAMP                 INTEGER,                /* Max 1 per VEVENT*/ 
-           DTSTART                 TIMESTAMP(14) NOT NULL, /* Max 1 per VEVENT*/
-           DTSTART_VALUETYPE       INTEGER NOT NULL,       /* VALUE_KEY */
-           DTSTART_TZID            INTEGER,                /* VALUE_KEY */
-           DTSTART_XPARAM          INTEGER,                /* VALUE_KEY */
-           DURATION                INTEGER,                /* Max 1 per VEVENT no DTEND*/ 
-           EXDATE                  INTEGER,
-           EXRULE                  INTEGER,
-           GEO                     INTEGER,                /* Max 1 per VEVENT*/ 
-           LAST_MODIFIED           INTEGER,                /* Max 1 per VEVENT*/ 
-           LOCATION                INTEGER,                /* Max 1 per VEVENT*/ 
-           METHOD                  INTEGER,
-           ORGANIZER               INTEGER,                /* Max 1 per VEVENT*/ 
-           PRIORITY                INTEGER,                /* Max 1 per VEVENT*/ 
-           RECURRENCE_ID           INTEGER,                /* Max 1 per VEVENT*/ 
-           RDATE_KEY               INTEGER,
-           RELATED_TO              INTEGER,
-           RESOURCES               INTEGER,
-           RRULE                   INTEGER,                /* VALUE_KEY */
-           SUMMARY                 INTEGER,                /* Max 1 per VEVENT*/ 
-           SEQUENCE                INTEGER,                /* Max 1 per VEVENT*/ 
-           STATUS                  INTEGER,                /* Max 1 per VEVENT*/ 
-           TRANSP                  INTEGER,                /* Max 1 per VEVENT*/                
-           UID                     VARCHAR(255),                /* Max 1 per VEVENT*/
-           UID_XPARAM              INTEGER,                /* VALUE_KEY */
-           URL                     INTEGER,                /* Max 1 per VEVENT*/                 
-           X_PROP_KEY              INTEGER,               
-           VALARM_KEY              INTEGER                 
-   )"
+  ID                      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  ATTACH                  INTEGER,
+  ATTENDEE                INTEGER,
+  CATEGORIES              INTEGER,
+  CLASS                   ENUM(\"PUBLIC\", \"PRIVATE\", \"CONFIDENTIAL\", \"<other>\") NOT NULL,  /* Max 1 per VEVENT*/
+  CLASS_OTHER_VALUE       TEXT,
+  CLASS_XPARAM            INTEGER,                /* VALUE_KEY */ 
+  COMMENT                 INTEGER,
+  CONTACT                 INTEGER,
+  CREATED                 TIMESTAMP(14),          /* Max 1 per VEVENT*/
+  CREATED_VALUETYPE       ENUM(\"DATE-TIME\",\"DATE\") DEFAULT \"DATE-TIME\",
+  CREATED_TZID            INTEGER,                /* VALUE_KEY */
+  CREATED_XPARAM          INTEGER,                /* VALUE_KEY */ 
+  DESCRIPTION             TEXT,                   /* Max 1 per VEVENT*/ 
+  DESCRIPTION_ALTREP      VARCHAR(255),                
+  DESCRIPTION_LANGUAGE    VARCHAR(255),                
+  DESCRIPTION_XPARAM      INTEGER,                /* VALUE_KEY */
+  DTEND                   TIMESTAMP(14),          /* Max 1 per VEVENT no DURATION*/
+  DTEND_VALUETYPE         ENUM(\"DATE-TIME\",\"DATE\") DEFAULT \"DATE-TIME\",
+  DTEND_TZID              TEXT,
+  DTEND_XPARAM            INTEGER,                /* VALUE_KEY */   
+  DTSTAMP                 TIMESTAMP(14),          /* Max 1 per VEVENT*/
+  DTSTAMP_XPARAM          INTEGER,                /* VALUE_KEY */ 
+  DTSTART                 TIMESTAMP(14),          /* Max 1 per VEVENT*/
+  DTSTART_VALUETYPE       ENUM(\"DATE-TIME\",\"DATE\") DEFAULT \"DATE-TIME\",
+  DTSTART_TZID            INTEGER,                /* VALUE_KEY */
+  DTSTART_XPARAM          INTEGER,                /* VALUE_KEY */
+  DURATION                INTEGER,                /* Max 1 per VEVENT no DTEND*/
+  DURATION_XPARAM         INTEGER,                /* VALUE_KEY */
+  EXDATE                  INTEGER,
+  EXRULE                  INTEGER,
+  GEO                     TINYINT,                /* Max 1 per VEVENT, a marker so that NULL means no GEO info*/
+  GEO_LATITUDE            FLOAT(7,3),
+  GEO_LONGITUDE           FLOAT(7,3),
+  GEO_XPARAM              INTEGER,                /* VALUE_KEY */
+  LAST_MODIFIED           TIMESTAMP(14),          /* Max 1 per VEVENT*/
+  LAST_MODIFIED_XPARAM    INTEGER,                /* VALUE_KEY */ 
+  LOCATION                TEXT,                   /* Max 1 per VEVENT*/ 
+  LOCATION_ALTREP         VARCHAR(255),
+  LOCATION_LANGUAGE       VARCHAR(255),
+  LOCATION_XPARAM         INTEGER,                /*VALUE_KEY*/
+  METHOD                  INTEGER,
+  ORGANIZER               TEXT,                   /* Max 1 per VEVENT*/
+  ORGANIZER_CN            INTEGER,                /* VALUE_KEY */
+  ORGANIZER_DIR           INTEGER,                /* VALUE_KEY */
+  ORGANIZER_SENT_BY       INTEGER,                /* VALUE_KEY */
+  ORGANIZER_LANGUAGE      INTEGER,                /* VALUE_KEY */
+  ORGANIZER_XPARAM        INTEGER,                /* VALUE_KEY */
+  PRIORITY                INTEGER,                /* Max 1 per VEVENT*/
+  PRIORITY_XPARAM         INTEGER,                /* VALUE_KEY */
+  RECURRENCE_ID           TIMESTAMP(14) NOT NULL, /* Max 1 per VEVENT*/
+  RECURRENCE_ID_VALUETYPE INTEGER NOT NULL,       /* VALUE_KEY */
+  RECURRENCE_ID_RANGE     ENUM(\"THISANDPRIOR\", \"THISANDFUTURE\"),
+  RECURRENCE_ID_TZID      INTEGER,                /* VALUE_KEY */
+  RECURRENCE_ID_XPARAM    INTEGER,                 /* VALUE_KEY */
+  RDATE_KEY               INTEGER,
+  RELATED_TO              INTEGER,
+  RESOURCES               INTEGER,
+  RRULE                   INTEGER,                /* VALUE_KEY */
+  SUMMARY                 TINYTEXT,               /* Max 1 per VEVENT*/
+  SUMMARY_ALTREP          INTEGER,                /* VALUE_KEY */
+  SUMMARY_LANGUAGE        INTEGER,                /* VALUE_KEY */
+  SUMMARY_XPARAM          INTEGER,                /* VALUE_KEY */
+  SEQUENCE                INTEGER,                /* Max 1 per VEVENT*/
+  SEQUENCE_XPARAM         INTEGER,                /* VALUE_KEY */
+  STATUS                  ENUM(\"TENTATIVE\",\"CONFIRMED\",\"CANCELLED\",\"NEEDS-ACTION\",
+                               \"COMPLETED\",\"IN-PROCESS\",\"DRAFT\",\"FINAL\"), /* Max 1 per VEVENT*/
+  STATUS_XPARAM                   INTEGER,                 /* VALUE_KEY */
+  TRANSP                  ENUM(\"OPQQUE\",\"TRANSPARENT\",\"OPAQUE-NOCONFLICTS\",
+                               \"TRANSPARENT-NOCONFLICTS\") NOT NULL DEFAULT \"TRANSPARENT\", /* Max 1 per VEVENT*/
+  TRANSP_XPARAM           INTEGER,                /* VALUE_KEY */
+  UID                     VARCHAR(255) NOT NULL,  /* Max 1 per VEVENT*/
+  UID_XPARAM              INTEGER,                /* VALUE_KEY */
+  URL                     TEXT,                /* Max 1 per VEVENT*/
+  URL_XPARAM              INTEGER,                 /* VALUE_KEY */                 
+  X_PROP_KEY              INTEGER,               
+  ALARM_KEY               INTEGER,
+  KEY UID(UID)
+  )"
+/* would also like to index on: but they can be null... hmmm...
+ * KEY DTSTART(DTSTART),
+ * KEY DTEND(DTEND)
+ */
    
 #define X_PROP_TABLE "_X_PROP (
-           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
+           ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+           VALUE_KEY                INTEGER NOT NULL,
            VALUE                    TEXT NOT NULL,
            NAME                     TEXT NOT NULL,
-           PARAMS                   INTEGER             /* VALUE_KEY (XPARAM)*/
+           PARAMS                   INTEGER,             /* VALUE_KEY (XPARAM)*/
+           KEY  VALUE_KEY(VALUE_KEY)
    )"
 #define XPARAM_TABLE "_XPARAM (
-           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
+           ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+           VALUE_KEY                INTEGER NOT NULL,
            VALUE                    TEXT NOT NULL,
-           NAME                     TEXT NOT NULL
+           NAME                     TEXT NOT NULL,
+           KEY  VALUE_KEY(VALUE_KEY)
    )"
 #define RRULE_TABLE "_RRULE (
-           VALUE_KEY             INTEGER NOT NULL PRIMARY KEY,
+           ID                       INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+           VALUE_KEY                INTEGER NOT NULL,
            FREQ                  ENUM(\"SECONDLY\", \"MINUTELY\", \"HOURLY\",
                                    \"DAILY\", \"WEEKLY\", \"MONTHLY\", \"YEARLY\"),
            UNTIL                 TIMESTAMP(14),
@@ -115,13 +159,16 @@
                                      \"9\", \"10\", \"11\", \"12\"),
            BYSETPOS              TINYTEXT,
            WKST                  SET(\"SU\", \"MO\", \"TU\", \"WE\", \"TH\", \"FR\", \"SA\"),
-           XPARAM                INTEGER                 /* VALUE_KEY */
+           XPARAM                INTEGER,                 /* VALUE_KEY */
+           KEY  VALUE_KEY(VALUE_KEY)
    )"
 
 static void		mysqldrv_freestream(CALSTREAM *stream);
 static bool		mysqldrv_mysql_query(CALSTREAM *stream, const char *query);
 //static bool		mysqldrv_validuser(const char *username,const char *password);
 //static bool		mysqldrv_userexists(const char *username);
+static void 		mysqldrvout_datetime (char *buffer, const datetime_t *input);
+static void 		mysqldrvout_ulong (char *buffer, const unsigned long input);
 
 static bool		mysqldrv_valid ( const CALADDR *addr );
 static CALSTREAM*	mysqldrv_open (	CALSTREAM *stream,
@@ -135,21 +182,21 @@ static bool		mysqldrv_create ( CALSTREAM *stream,
 static bool		mysqldrv_search_range(	CALSTREAM *stream,
 						const datetime_t *start,
 						const datetime_t *end);
-//static bool		mysqldrv_search_alarm(	CALSTREAM *stream,
-//						const datetime_t *when);
-//static bool		mysqldrv_fetch(	CALSTREAM *stream,
-//						unsigned long id,
-//						CALEVENT **event);
-//static bool		mysqldrv_append(	CALSTREAM *stream,
-//						const CALADDR *addr,
-//						unsigned long *id,
-//						const CALEVENT *event);
-//static bool		mysqldrv_remove(	CALSTREAM *stream,
-//						unsigned long id);
-//static bool		mysqldrv_snooze(	CALSTREAM *stream,
-//					unsigned long id);
-//static bool		mysqldrv_store(   CALSTREAM *stream, 
-//					const CALEVENT *modified_event);
+static bool		mysqldrv_search_alarm(	CALSTREAM *stream,
+						const datetime_t *when);
+static bool		mysqldrv_fetch(	CALSTREAM *stream,
+						unsigned long id,
+						CALEVENT **event);
+static bool		mysqldrv_append(	CALSTREAM *stream,
+						const CALADDR *addr,
+						unsigned long *id,
+						const CALEVENT *event);
+static bool		mysqldrv_remove(	CALSTREAM *stream,
+						unsigned long id);
+static bool		mysqldrv_snooze(	CALSTREAM *stream,
+					unsigned long id);
+static bool		mysqldrv_store(   CALSTREAM *stream, 
+					const CALEVENT *modified_event);
 
 CALDRIVER mysqldrv_driver =
 {
@@ -159,12 +206,12 @@ CALDRIVER mysqldrv_driver =
 	mysqldrv_ping,
 	mysqldrv_create,
 	mysqldrv_search_range,
-//	mysqldrv_search_alarm,
-//	mysqldrv_fetch,
-//	mysqldrv_append,
-//	mysqldrv_remove,
-//	mysqldrv_snooze,
-//	mysqldrv_store,
+	mysqldrv_search_alarm,
+	mysqldrv_fetch,
+	mysqldrv_append,
+	mysqldrv_remove,
+	mysqldrv_snooze,
+	mysqldrv_store,
 };
 
 void
@@ -297,7 +344,7 @@ fail:
 
 bool
 mysqldrv_search_range(	CALSTREAM *stream, const datetime_t *start, const datetime_t *end) {
-
+/*
 not supported:
  COUNT
  BYDAY (list of dates)
@@ -399,5 +446,158 @@ original pseudocode
                         and UNTIL >=(timestamp)end
                         and dayofyear(DTSTART)>=start-firstdayofyear
                         and dayofyear(DTSTART)<=end-firstdayofyear
+*/
+    return false;
 }
 
+bool
+mysqldrv_search_alarm(	CALSTREAM *stream, const datetime_t *when) {
+    return false;
+}
+
+bool
+mysqldrv_fetch(	CALSTREAM *stream, unsigned long id, CALEVENT **event){ ;
+    return false;
+}
+bool		mysqldrv_append(	CALSTREAM *stream, const CALADDR *addr, unsigned long *id, const CALEVENT *event){
+    return false;
+}
+bool		mysqldrv_remove(	CALSTREAM *stream, unsigned long id){
+    return false;
+}
+bool		mysqldrv_snooze(	CALSTREAM *stream, unsigned long id){
+    return false;
+}
+
+
+void
+mysqldrvout_datetime (char *buffer, const datetime_t *input) {
+    // this buffer size assumption follows from mysqldrv_store
+    char buffer2[9000];
+    strcpy (buffer2, buffer);
+    strcat (buffer2, "\'");
+        cc_vlog (buffer2,"");
+    if ( dt_hasdate(input) ) {
+        snprintf (buffer, 9000, "%s%04u-%02u-%02u", buffer2, input->year, input->mon, input->mday );        
+        if ( dt_hastime(input) ) {
+            snprintf (buffer, 9000, " %02u:%02u:%02u", input->hour, input->min, input->sec );
+        }
+    strcat (buffer,"\'");
+    }
+    cc_vlog (buffer,"");
+}
+
+void
+mysqldrvout_ulong ( char *buffer, const unsigned long input) {
+    // this buffer size assumption follows from mysqldrv_store
+    char buffer2[9000];
+    strcpy (buffer2, buffer);
+    snprintf ( buffer, 9000, "%s%li", buffer2, input);
+}
+
+bool
+mysqldrv_store(CALSTREAM *stream, const CALEVENT *event) {
+    /* I'm using buffers in this function both for simplicity and to cut down the number of mallocs
+     * this function is in danger of memory overruns if the query size grows alot without changing the 
+     * buffer sizes, strcat doesn't do any memory checking.
+     */
+    char buffer [10000];
+    char fieldbuffer [1000];
+    char valbuffer [9000];
+    bool error;
+    char error_text [100];
+    int  temp_int;
+    
+    strcpy ( buffer, "INSERT INTO lauren_VEVENT" );
+    strcpy ( fieldbuffer, "(" );
+    strcpy ( valbuffer , "(" );
+    
+    
+    // insert any data integrety checks here as each field is added to a buffer.
+    // required fields:
+    strcat (fieldbuffer, "UID, " );
+    if (event->id) {
+        mysqldrvout_ulong (valbuffer, event->id );
+    } else {
+        // set the UID, this isn't the best way to do it though, not overly unique.
+        mysqldrvout_ulong (valbuffer, time(NULL) );
+    }
+    strcat ( valbuffer, ", " );
+    
+    strcat ( fieldbuffer, "CLASS, " );    // guaranteed to be included.
+    if (event->public) {
+        strcat ( valbuffer, "'PUBLIC', " );
+    } else {
+        strcat ( valbuffer, "'PRIVATE', " );
+    }
+    
+    strcat ( fieldbuffer, "DTSTART, " );    // guaranteed to be included.
+    if (dt_hasdate(&event->start)) {
+        //mysqldrv_datetime( datetime_temp, 30, &event->start);
+        //strcat ( valbuffer, datetime_temp);
+        mysqldrvout_datetime( valbuffer, &event->start);
+        strcat ( valbuffer, ", " );
+
+        strcat ( fieldbuffer, "DTSTART_VALUETYPE, " ); // specify the DTSTART type
+        if (dt_hastime(&event->start)) {
+            strcat ( valbuffer, "'DATE-TIME', ");
+        } else {
+            strcat ( valbuffer, "'DATE', " );
+        }            
+    } else {
+        error = true;
+        strcat (error_text,"6.x DTSTART required\n");
+    }
+
+
+    /*
+     * optional fields:
+     */
+     
+    /* set end date if time but not date present */ 
+    if (dt_hastime(&event->end) && !dt_hasdate(&event->end)) {
+        if (dt_hasdate(&event->start)) {
+            dt_setdate(&event->end,	event->start.year, event->start.mon, event->start.mday);
+        } else {
+            error = true;
+            strcat (error_text,"6x DTEND date required\n");
+        }
+    }
+    
+    if (dt_hasdate(&event->end)) {
+        strcat ( fieldbuffer, "DTEND, " );
+        mysqldrvout_datetime ( valbuffer, &event->end );
+        strcat ( valbuffer, ", " );
+        strcat ( fieldbuffer, "DTEND_VALUETYPE, " ); // specify the DTEND type
+        if (dt_hastime(&event->end)) {
+            strcat ( valbuffer, "'DATE-TIME', ");
+        } else {
+            strcat ( valbuffer, "'DATE', " );
+        }            
+    }
+    
+    /* cut ', ' off the ends of buffers.  Assumes lengths to be >=2 */
+    valbuffer[strlen(valbuffer)-2] = '\0';
+    fieldbuffer[strlen(fieldbuffer)-2] = '\0';    
+    strcat (fieldbuffer, ")");
+    strcat (valbuffer, ")");
+    
+    strcat (buffer, fieldbuffer);
+    strcat (buffer, " VALUES ");
+    strcat (buffer, valbuffer);
+
+
+    cc_vlog (buffer,"");    
+    error = error || mysqldrv_mysql_query(stream, buffer);
+/*    
+    what with CATEGORIES
+    RRULE T/F
+     
+    INSERT INTO ****_VEVENT (UID, CLASS, DTSTART, DTEND, CATEGORIES, SUMMARY, DESCRIPTION)
+    
+    X-PROP
+    X-ALARM
+*/
+
+return !error;    
+}
