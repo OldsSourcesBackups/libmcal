@@ -1,6 +1,6 @@
 /*
 
-	$Id: mcal.c,v 1.3 2000/01/22 03:08:51 markie Exp $
+	$Id: mcal.c,v 1.4 2000/03/27 04:06:04 zircote Exp $
 
     mcal - libmcal powered cal replacement
     Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -44,7 +44,7 @@ mcal@lists.chek.com
 
 #define REVON "\033[7m"
 #define REVOFF "\033[27m"
-#define MCAL_VER "0.2"
+#define MCAL_VER "0.3"
 
 CALSTREAM *stream;
 int events[13][32];
