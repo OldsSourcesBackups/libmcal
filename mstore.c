@@ -1,9 +1,10 @@
-/* $Id: mstore.c,v 1.21 2001/05/07 17:37:10 chuck Exp $ */
+/* $Id: mstore.c,v 1.22 2001/12/25 02:41:44 chuck Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <pwd.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <crypt.h>
 
@@ -489,42 +490,41 @@ mstore_search_range(	CALSTREAM *stream,
 	rewind(calfile);
 
 	if (start) {
-		if (!dt_hasdate(start))
-//LM:should this be _start = NULL? and again below for end?
-			start = NULL;
-		else {
-			dt_setdate(&_start,
-				start->year, start->mon, start->mday);
-		}
+	    if (!dt_hasdate(start)) {
+		// LM:should this be _start = NULL? and again below for end?
+		start = NULL;
+	    } else {
+		dt_setdate(&_start,
+			   start->year, start->mon, start->mday);
+	    }
 	}
 	if (end) {
-		if (!dt_hasdate(end))
-			end = NULL;
-		else
-			dt_setdate(&_end, end->year, end->mon, end->mday);
+	    if (!dt_hasdate(end))
+	      end = NULL;
+	    else
+	      dt_setdate(&_end, end->year, end->mon, end->mday);
 	}
+    
+	while ((event = read_event(calfile))) {
+	    datetime_t	clamp = DT_INIT;
+	    
+	    if (!start) {
+		dt_setdate(&clamp, 1, JANUARY, 1);
+	    } else {
+		dt_setdate(&clamp,
+			   _start.year, _start.mon, _start.mday);
+	    }
 
-	while((event = read_event(calfile))) {
-		datetime_t	clamp = DT_INIT;
+	    calevent_next_recurrence(event, &clamp, stream->startofweek);
+	    if (dt_hasdate(&clamp) &&
+		!(end && dt_compare(&clamp, &_end) > 0)) {
+		cc_searched(event->id);
+	    }
 
-		if (!start)
-			dt_setdate(&clamp, 1, JANUARY, 1);
-		else {
-			dt_setdate(&clamp,
-				_start.year, _start.mon, _start.mday);
-		}
-
-		calevent_next_recurrence(event, &clamp, stream->startofweek);
-		if (	dt_hasdate(&clamp) &&
-			!(end && dt_compare(&clamp, &_end) > 0))
-		{
-			cc_searched(event->id);
-		}
-
-		calevent_free(event);
+	    calevent_free(event);
 	}
-	fclose(calfile);
-	return true;
+    fclose(calfile);
+    return true;
 }
 
 
@@ -536,8 +536,8 @@ mstore_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	char		userpath[1000];
 
 	snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
-	calfile=fopen (userpath, "a+");
-	if(!calfile) {
+	calfile = fopen (userpath, "a+");
+	if (!calfile) {
 	    printf("Error! couldn't open calendar file!\n");
 	    exit(1);
 	}
@@ -586,46 +586,45 @@ mstore_fetch(CALSTREAM *stream, unsigned long id, CALEVENT **inevent)
 
 
 bool
-mstore_append(	CALSTREAM *stream, const CALADDR *addr,
-			unsigned long *id, const CALEVENT *event)
+mstore_append(CALSTREAM *stream, const CALADDR *addr,
+              unsigned long *id, const CALEVENT *event)
 {
-	CALEVENT myevent;
-	FILE *calfile;
-	char userpath[1000];
+    CALEVENT myevent;
+    FILE *calfile;
+    char userpath[1000];
+    
+    if (addr->host) {
+	return false;
+    }
+    if (addr->user) {
+	return false;
+    }
+    if (strcasecmp(addr->folder, "INBOX")) {
+	return false;
+    }
 
-	if (addr->host)
-		return false;
-	if (addr->user)
-		return false;
-	if (strcasecmp(addr->folder, "INBOX"))
-		return false;
+    if (!dt_hasdate(&event->start)) {
+	return false;
+    }
 
-	/* comment this out so that we can share calendars
-	if (DATA->folder_userbuf)
-		return false;
-	*/
-	
-	if (!dt_hasdate(&event->start))
-		return false;
+    snprintf(userpath, 900, "%s/%s", DATA->base_path, DATA->folder_user);
+    calfile = fopen(userpath, "a");
+    if (!calfile) {
+        printf("Error! couldn't open calendar file %s\n",userpath);
+	perror("mstore_append");
+        return false;
+    }
 
-	snprintf(userpath,900,"%s/%s",DATA->base_path,DATA->folder_user);
-	calfile=fopen (userpath,"a");
-        if(!calfile)
-          {
-            printf("Error! couldn't open calendar file %s\n",userpath);
-	    perror("mstore_append");
-            return false;
-          }
+    myevent = *event;
+    myevent.id = time(NULL);
+    
+    write_event(calfile, &myevent);
 
-	myevent = *event;
-	myevent.id = time(NULL);
-	write_event(calfile, &myevent);
+    fclose(calfile);
 
-	fclose(calfile);
+    *id = myevent.id;
 
-	*id = myevent.id;
-
-	return true;
+    return true;
 }
 
 
