@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.1 1999/12/02 08:02:58 zircote Exp $ */
+/* $Id: mstore.c,v 1.2 1999/12/06 23:40:08 zircote Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -273,7 +273,7 @@ CALEVENT *read_event(FILE *calfile)
 	CALEVENT	*event;
 
 	fgets(line, sizeof(line), calfile);
-	if (!sscanf(line, "%d", &size))
+	if (sscanf(line, "%d", &size) != 1)
 		return NULL;
 	buf = malloc(size + 2);
 	fread(buf, size, 1, calfile);
