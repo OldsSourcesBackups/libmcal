@@ -1,6 +1,6 @@
 
 /*
- *	$Id: mcal.h,v 1.9 2000/12/21 15:41:47 markie Exp $
+ *	$Id: mcal.h,v 1.10 2001/01/09 03:26:48 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -236,6 +236,11 @@ CALDRIVER {
 	bool            (*store)(       CALSTREAM *stream, 
 					const CALEVENT *event);
 
+	/* Delete an entire calendar */
+	bool            (*delete)(     CALSTREAM *stream,  char *calendar);
+
+	bool            (*rename)(      CALSTREAM *stream,char *src,char *dest);
+
 
 };
 
@@ -412,6 +417,15 @@ bool		cal_remove(	CALSTREAM *stream,
 /* Cancels the alarm for event with id of <id>.  Returns false on error. */
 bool		cal_snooze(	CALSTREAM *stream,
 				unsigned long id);
+
+/* delete an entire calendar */
+
+bool		cal_delete(	CALSTREAM *stream,
+				char *calendar);
+
+/* rename a calendar */
+bool		cal_rename(	CALSTREAM *stream,
+				char *src,char *dest);
 
 
 /* private functions */

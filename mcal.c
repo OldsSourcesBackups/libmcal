@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.8 2000/06/27 22:17:14 askalski Exp $
+ *	$Id: mcal.c,v 1.9 2001/01/09 03:26:48 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -981,6 +981,24 @@ cal_store(CALSTREAM *stream, CALEVENT *event)
         return good;
 }
 
+
+bool
+cal_delete(CALSTREAM *stream, char *calendar)
+{
+	if (stream == NULL || stream->dead)
+		return false;
+	return stream->driver->delete(stream, calendar);
+}
+
+bool
+cal_rename(CALSTREAM *stream, char *src,char *dest)
+{
+	if (stream == NULL || stream->dead)
+		return false;
+	return stream->driver->rename(stream, src,dest);
+}
+
+
 /** Dummy Driver **/
 static bool		dummy_valid(const CALADDR *addr);
 static CALSTREAM*	dummy_open(	CALSTREAM *stream,
@@ -1005,6 +1023,12 @@ static bool		dummy_remove(	CALSTREAM *stream,
 static bool		dummy_snooze(	CALSTREAM *stream,
 					unsigned long id);
 
+static bool		dummy_delete(	CALSTREAM *stream,
+					char *calendar);
+
+static bool		dummy_rename(	CALSTREAM *stream,
+					char *src,char *dest);
+
 const CALDRIVER dummy_driver =
 {
 	dummy_valid,
@@ -1018,6 +1042,9 @@ const CALDRIVER dummy_driver =
 	dummy_append,
 	dummy_remove,
 	dummy_snooze,
+	dummy_delete,
+	dummy_rename,
+	
 };
 
 
@@ -1097,6 +1124,18 @@ dummy_remove(CALSTREAM *stream, unsigned long id)
 
 bool
 dummy_snooze(CALSTREAM *stream, unsigned long id)
+{
+	return false;
+}
+
+bool
+dummy_delete(CALSTREAM *stream, char *calendar)
+{
+	return false;
+}
+
+bool
+dummy_rename(CALSTREAM *stream, char *src,char *dest)
 {
 	return false;
 }
