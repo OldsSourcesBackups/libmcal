@@ -1,5 +1,5 @@
 /*
- *	$Id: datetime.c,v 1.3 2000/05/11 19:43:23 inan Exp $
+ *	$Id: datetime.c,v 1.4 2003/01/28 14:59:46 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -383,8 +383,9 @@ dt_roll_time(datetime_t *dt, int hour, int min, int sec)
 	int		spillage;
 	int		doe;
 
-	if (!dt->has_time)
+	if (!dt->has_time) {
 		return false;
+    }
 
 	sec += dt->sec;
 	min += dt->min + (sec - (sec < 0 ? 59 : 0)) / 60;
@@ -398,10 +399,12 @@ dt_roll_time(datetime_t *dt, int hour, int min, int sec)
 	if (dt->has_date) {
 		doe = dt_dayofepoch(dt);
 		spillage += doe;
-		if (spillage < DOE_MIN || spillage > DOE_MAX)
+		if (spillage < DOE_MIN || spillage > DOE_MAX) {
 			return false;
-		if (!dt_setdoe(dt, spillage))
+        }
+		if (!dt_setdoe(dt, spillage)) {
 			return false;
+        }
 	}
 
 	if (!dt_settime(dt, hour, min, sec)) {
