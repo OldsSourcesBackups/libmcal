@@ -1,3 +1,9 @@
-#$Id: Changelog,v 1.1 1999/12/02 08:02:27 zircote Exp $
+#$Id: Changelog,v 1.2 2001/04/16 18:08:53 rufustfirefly Exp $
+
+2001-04-16  jeff b  <jeff@univrel.pr.uconn.edu>
+
+	* Makefile: fixed makefile for source tree compilation
+
+--------------------------
 - Added Changelog :^)
 - Added license file

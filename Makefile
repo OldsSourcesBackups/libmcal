@@ -1,8 +1,8 @@
-#$Id: Makefile,v 1.2 2000/01/25 03:08:10 markie Exp $
+#$Id: Makefile,v 1.3 2001/04/16 18:08:53 rufustfirefly Exp $
 
 CC=gcc
 FLEX=flex
-INCLUDE=-I..
+INCLUDE=-I.. -I../libmcal
 CFLAGS=-O0 -Wall -g $(INCLUDE)
 ALLOBJS=icap.o icaproutines.o lex.icap_yy.o
 TARGET=icap_driver.o
