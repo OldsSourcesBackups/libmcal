@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.19 2001/03/16 19:30:42 chuck Exp $ */
+/* $Id: mstore.c,v 1.20 2001/03/20 16:40:52 rufustfirefly Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -6,10 +6,14 @@
 #include <pwd.h>
 #include <unistd.h>
 #include <crypt.h>
+
+#ifdef USE_PAM
+#include <security/pam_appl.h>
+#endif /* USE_PAM */
+
 #include "mcal.h"
 #include "mstore.h"
 #include "icap/icaproutines.h"
-
 
 #define MSTORE_VER "0.5"
 #define	DATA_T	struct mstore_data
@@ -100,9 +104,94 @@ mstore_freestream(CALSTREAM *stream)
 }
 
 
+#ifdef USE_PAM
+
+/* PAM support stuff goes here */
+
+static pam_handle_t *pamh = NULL;
+static char *PAM_username;
+static char *PAM_password;
+
+#define COPY_STRING(s) (s) ? strdup(s) : NULL
+
+static int PAM_conv (int num_msg,
+					const struct pam_message **msg,
+					struct pam_response **resp,
+					void *appdata_ptr)
+{
+	struct pam_response *reply;
+	int count;
+
+	if (num_msg < 1)
+		return PAM_CONV_ERR;
+
+	reply = (struct pam_response *)
+		calloc (num_msg, sizeof(struct pam_response));
+
+	if (!reply)
+		return PAM_CONV_ERR;
+
+	for (count=0; count<num_msg; count++) {
+		char *string = NULL;
+
+		switch (msg[count]->msg_style) {
+			case PAM_PROMPT_ECHO_ON:
+				if (!(string = COPY_STRING(PAM_username)))
+					goto pam_fail_conv;
+				break;
+			case PAM_PROMPT_ECHO_OFF:
+				if (!(string = COPY_STRING(PAM_password)))
+					goto pam_fail_conv;
+				break;
+			case PAM_TEXT_INFO:
+#ifdef PAM_BINARY_PROMPT
+			case PAM_BINARY_PROMPT:
+#endif /* PAM_BINARY_PROMPT */
+				/* ignore it */
+				break;
+			case PAM_ERROR_MSG:
+			default:
+				goto pam_fail_conv;
+		} /* end switch msg[count]->msg_style */
+
+		if (string) {
+			reply[count].resp_retcode = 0;
+			reply[count].resp = string;
+			string = NULL;
+		} /* end if string */
+
+	} // end for count
+
+	*resp = reply;
+	return PAM_SUCCESS;
+
+pam_fail_conv:
+	for(count=0; count<num_msg; count++) {
+		if (!reply[count].resp)
+			continue;
+		switch (msg[count]->msg_style) {
+			case PAM_PROMPT_ECHO_ON:
+			case PAM_PROMPT_ECHO_OFF:
+				free(reply[count].resp);
+				break;
+		} /* end switch msg[count]->msg_style */
+	} /* end for count */
+
+	free(reply);
+	return PAM_CONV_ERR;
+} /* end function static int PAM_conv (...) */
+
+static struct pam_conv PAM_conversation = {
+	&PAM_conv,
+	NULL
+};
+
+#endif /* USE_PAM */
+
 bool
 mstore_validuser(const char *username,const char *password)
 {
+#ifndef USE_PAM
   FILE *mpasswd;
   char line[1000];
   char *musername,*mpassword;
@@ -135,6 +224,31 @@ mstore_validuser(const char *username,const char *password)
     }
 	fclose(mpasswd);
       return false;
+#else
+	/* PAM authentication */
+	int PAM_error;
+
+	PAM_error = pam_start("mstore", username, &PAM_conversation, &pamh);
+	if (PAM_error != PAM_SUCCESS)
+		goto login_err;
+	pam_set_item(pamh, PAM_TTY, "mstore");
+	pam_set_item(pamh, PAM_RHOST, "localhost");
+	PAM_error = pam_authenticate(pamh, 0);
+	if (PAM_error != PAM_SUCCESS)
+		if (PAM_error == PAM_MAXTRIES)
+			goto login_err;
+#ifndef PAM_CRED_ESTABLISH
+#define PAM_CRED_ESTABLISH PAM_ESTABLISH_CRED
+#endif /* PAM_CRED_ESTABLISH */
+	PAM_error = pam_setcred(pamh, PAM_CRED_ESTABLISH);
+	if (PAM_error != PAM_SUCCESS)
+		goto login_err;
+
+login_err:
+	pam_end(pamh, PAM_error);
+	pamh = NULL;
+	return false;
+#endif /* ! USE_PAM */
 }
 
 

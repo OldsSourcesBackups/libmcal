@@ -1,4 +1,9 @@
-$Id: Changelog,v 1.3 2000/10/25 18:30:59 rufustfirefly Exp $
+$Id: Changelog,v 1.4 2001/03/20 16:40:51 rufustfirefly Exp $
+
+Version 0.5
+ - optional PAM support (listed as libmcal, module mstore) through USE_PAM
+   define, enabled by default (rufustfirefly)
+ - make now builds without symlinks (rufustfirefly)
 
 Version 0.3
  - #ifdef DEBUG'd most of the debugging messages (rufustfirefly)

@@ -1,9 +1,9 @@
-# $Id: Makefile,v 1.2 2000/10/05 17:38:18 rufustfirefly Exp $
+# $Id: Makefile,v 1.3 2001/03/20 16:40:52 rufustfirefly Exp $
 
 CC=gcc
 FLEX=flex
-INCLUDE=-I..
-CFLAGS=-O0 -Wall -g $(INCLUDE) -DDEBUG
+INCLUDE=-I.. -I../libmcal
+CFLAGS=-O0 -Wall -g $(INCLUDE) -DDEBUG -DUSE_PAM
 ALLOBJS=mstore.o
 TARGET=mstore_driver.o
 
