@@ -1,5 +1,5 @@
 /*
- *	$Id: mysqldrv.c,v 1.7 2000/05/10 17:51:56 inan Exp $
+ *	$Id: mysqldrv.c,v 1.8 2000/05/11 19:44:36 inan Exp $
  * Mysqldrv - A MySQL driver for MCAL
  * Copyright (C) 2000 Lauren Matheson
  *
@@ -402,7 +402,7 @@ mysqldrv_set_recur (CALEVENT *event, const char *freq, const char *enddate, cons
     recur_t temp_recur;
     byday_t temp_byday;
 
-    ical_get_recur_freq(&temp_recur, freq);
+    ical_get_recur_freq(&temp_recur, freq, byday);
     event->recur_type = temp_recur;
     switch(temp_recur){
         case RECUR_WEEKLY:

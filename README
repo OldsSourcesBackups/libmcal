@@ -1,0 +1,24 @@
+$Id: README,v 1.1 2000/05/11 19:44:36 inan Exp $
+
+This is a mcal driver for mysql.  One of the main goals in putting it together
+was to keep the table arrangement in mysql as close to the ical standard as
+possible to make it easier to keep to ical as new features are added to mcal
+later.
+
+To get going, create a database in MySQL called 'mcal' and create a user
+account with permissions to modify that database.  Then create a calendar
+with the same name as the user (you can do this by modifying tester, or soon
+with php).  Currently mysqldrv is limited to only being able to access the 
+calendar of the database user, but this isn't too difficult to change.
+
+As it stands (11 May 2000) I'm having trouble compiling this in with php
+from conflicts with the mysql module in php.  I'm sure this has an easy
+solution, but I don't know it, so if you do, let me know.  Oh, also, right now
+the Makefile is set to look for /usr/include/mysql/mcal.h and 
+/usr/lib/mysql/libmysqlclient.a.  These are the default spots for the RedHat 
+rpm, and probably other configurations too, but if they aren't for you then 
+you just need to change a line in the Makefile and change the include for
+mcal.h in mysqldrv.c
+
+Lauren Matheson
+inan@canada.com
