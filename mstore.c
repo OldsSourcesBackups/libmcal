@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.5 2000/01/25 03:08:11 markie Exp $ */
+/* $Id: mstore.c,v 1.6 2000/01/26 23:14:54 askalski Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -332,19 +332,38 @@ mstore_search_range(	CALSTREAM *stream,
 	  }
 	rewind(calfile);
 
-	if (start)
-		dt_setdate(&_start, start->year, start->mon, start->mday);
-	if (end)
-		dt_setdate(&_end, end->year, end->mon, end->mday);
+	if (start) {
+		if (!dt_hasdate(start))
+			start = NULL;
+		else {
+			dt_setdate(&_start,
+				start->year, start->mon, start->mday);
+		}
+	}
+	if (end) {
+		if (!dt_hasdate(end))
+			end = NULL;
+		else
+			dt_setdate(&_end, end->year, end->mon, end->mday);
+	}
 
 	while((event=read_event(calfile))) {
-		dt_cleartime(&event->start);
-		dt_cleartime(&event->end);
-		if(	(!start || dt_compare(&(event->start),&_start) >=0) &&
-			(!end || dt_compare(&(event->start),&_end) <= 0))
+		datetime_t	clamp = DT_INIT;
+
+		if (!start)
+			dt_setdate(&clamp, 1, JANUARY, 1);
+		else {
+			dt_setdate(&clamp,
+				_start.year, _start.mon, _start.mday);
+		}
+
+		calevent_next_recurrence(event, &clamp, stream->startofweek);
+		if (	dt_hasdate(&clamp) &&
+			!(end && dt_compare(&clamp, &_end) > 0))
 		{
 			cc_searched(event->id);
 		}
+
 		calevent_free(event);
 	}
 	fclose(calfile);
@@ -556,7 +575,7 @@ if(!modified_event->id)
         while((event=read_event(calfile))) {
 	  if (event->id == modified_event->id)
 	    {
-	    (const *)event = modified_event;         
+	    (const CALEVENT*)event = modified_event;         
 	  /*is more required here to assign objects, a loop through all the properties*/
 	    /*    We actually only want to modify any individual property, not the whole thing..
 		  TODO */
