@@ -1,2 +1,4 @@
 *~
 *.bak
+lex.icap_yy.c
+bootstrap.in
