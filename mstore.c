@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.13 2000/05/11 18:36:56 inan Exp $ */
+/* $Id: mstore.c,v 1.14 2000/05/11 19:45:23 inan Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +26,7 @@ static CALSTREAM*	mstore_open(	CALSTREAM *stream,
 					const CALADDR *addr, long options);
 static CALSTREAM*	mstore_close(CALSTREAM *stream, long options);
 static bool		mstore_ping(CALSTREAM *stream);
+static bool		mstore_create (CALSTREAM *stream, const char *calendar);
 static bool		mstore_search_range(	CALSTREAM *stream,
 						const datetime_t *start,
 						const datetime_t *end);
@@ -50,6 +51,7 @@ CALDRIVER mstore_driver =
 	mstore_open,
 	mstore_close,
 	mstore_ping,
+	mstore_create,
 	mstore_search_range,
 	mstore_search_alarm,
 	mstore_fetch,
@@ -267,6 +269,13 @@ bool
 mstore_ping(CALSTREAM *stream)
 {
 	return true;
+}
+
+
+bool
+mstore_create(CALSTREAM *stream, const char *calendar)
+{
+	return false;
 }
 
 
