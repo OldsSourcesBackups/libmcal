@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.2 2000/01/19 18:58:26 markie Exp $
+ *	$Id: mcal.c,v 1.3 2000/01/20 01:47:18 askalski Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -283,33 +283,100 @@ caladdr_dup(const CALADDR *addr)
 CALEVENT*
 calevent_new(void)
 {
-	return calloc(1, sizeof(CALEVENT));
+	CALEVENT		*event;
+
+	if ((event = calloc(1, sizeof(CALEVENT))) == NULL)
+		return NULL;
+	/* set all pointers to NULL */
+	event->category = NULL;
+	event->title = NULL;
+	event->description = NULL;
+	event->attrlist = NULL;
+
+	return event;
 }
 
 
 CALEVENT*
 calevent_free(CALEVENT *event)
 {
-EVENTDATA *next;
+	CALATTR		*attr, *next;
+
 	if (event) {
 		free(event->category);
 		free(event->title);
 		free(event->description);
-		if(event->data)
-		  {
-
-		    while(event->data)
-		      {
-			next=event->data->next;
-			free(event->data->attribute);
-			free(event->data->value);
-			free(event->data->next);
-			event->data=next;
-		      }
-		  }
+		for (attr = event->attrlist; attr; attr = next) {
+			next = attr->next;
+			free(attr->name);
+			free(attr->value);
+			free(attr);
+		}
 		free(event);
 	}
 	return NULL;
+}
+
+
+const char*
+calevent_getattr(CALEVENT *event, const char *name)
+{
+	CALATTR		*attr;
+
+	for (attr = event->attrlist; attr; attr = attr->next)
+		if (!strcasecmp(attr->name, name))
+			return attr->value;
+
+	return NULL;
+}
+
+
+bool
+calevent_setattr(CALEVENT *event, const char *name, const char *value)
+{
+	CALATTR		*attr;
+	char		*tmp;
+
+	if (value && (tmp = strdup(value)) == NULL)
+		return false;
+
+	for (attr = event->attrlist; attr; attr = attr->next)
+		if (!strcasecmp(attr->name, name))
+			break;
+
+	if (value) {
+		if (attr) {
+			free(attr->value);
+		}
+		else {
+			if (	(attr = malloc(sizeof(CALATTR))) == NULL ||
+				(attr->name = strdup(name)) == NULL)
+			{
+				if (attr) {
+					free(attr->name);
+					free(attr);
+				}
+				free(tmp);
+				return false;
+			}
+
+			attr->prev = &event->attrlist;
+			attr->next = event->attrlist;
+			event->attrlist->prev = &attr->next;
+			event->attrlist = attr;
+		}
+
+		attr->value = tmp;
+	}
+	else if (attr) {
+		if ((*attr->prev = attr->next))
+			attr->next->prev = attr->prev;
+		free(attr->name);
+		free(attr->value);
+		free(attr);
+	}
+
+	return true;
 }
 
 

@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.2 2000/01/19 18:58:26 markie Exp $
+ *	$Id: mcal.h,v 1.3 2000/01/20 01:47:18 askalski Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -50,7 +50,7 @@
 #define	CALSTREAM	struct cal_stream
 #define	CALADDR		struct cal_addr
 #define	CALEVENT	struct cal_event
-#define EVENTDATA       struct event_data
+#define	CALATTR		struct cal_attr
 
 /* calendar options */
 enum {
@@ -98,11 +98,13 @@ typedef union recurdata
 
 
 /* driver specific linked list data */
-EVENTDATA {
-  char *attribute;
-  char *value;
-  EVENTDATA * next;
+CALATTR {
+	char			*name;		/* name */
+	char			*value;		/* value */
+	CALATTR			**prev;		/* previous in list */
+	CALATTR			*next;		/* next in list */
 };
+
 
 /* event structure */
 CALEVENT {
@@ -122,7 +124,7 @@ CALEVENT {
 	long			recur_interval;	/* recurrence interval */
 	datetime_t		recur_enddate;	/* last recurrence */
 	recurdata_t		recur_data;	/* type-specific data */
-	EVENTDATA *data;
+	CALATTR			*attrlist;	/* attribute list */
 };
 
 
@@ -277,6 +279,11 @@ CALEVENT*	calevent_new(void);
 
 /* Disposes of a CALEVENT, returns NULL for convenience. */
 CALEVENT*	calevent_free(CALEVENT *event);
+
+/* Routines to set and fetch event attributes. */
+const char*	calevent_getattr(CALEVENT *event, const char *name);
+bool		calevent_setattr(CALEVENT *event, const char *name,
+					const char *value);
 
 /* Routines to alter event recurrence. */
 bool		calevent_recur_none(CALEVENT *event);
