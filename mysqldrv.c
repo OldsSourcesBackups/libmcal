@@ -57,7 +57,66 @@
            X_PROP_KEY              INTEGER,               
            VALARM_KEY              INTEGER                 
    )"
-
+   
+#define X_PROP_TABLE "_X_PROP (
+           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
+           VALUE                    TEXT NOT NULL,
+           NAME                     TEXT NOT NULL,
+           PARAMS                   INTEGER             /* VALUE_KEY (XPARAM)*/
+   )"
+#define XPARAM_TABLE "_XPARAM (
+           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
+           VALUE                    TEXT NOT NULL,
+           NAME                     TEXT NOT NULL
+   )"
+#define RRULE_TABLE "_RRULE (
+           VALUE_KEY             INTEGER NOT NULL PRIMARY KEY,
+           FREQ                  ENUM(\"SECONDLY\", \"MINUTELY\", \"HOURLY\",
+                                   \"DAILY\", \"WEEKLY\", \"MONTHLY\", \"YEARLY\"),
+           UNTIL                 TIMESTAMP(14),
+           COUNT                 INTEGER,
+           INTERVAL_VAL          INTEGER,
+           BYSECOND              SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
+                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
+                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
+                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
+                                     \"30\", \"31\", \"32\", \"33\", \"34\", \"35\", \"36\",
+                                     \"37\", \"38\", \"39\", \"40\", \"41\", \"42\", \"43\",
+                                     \"44\", \"45\", \"46\", \"47\", \"47\", \"48\", \"49\",
+                                     \"50\", \"51\", \"52\", \"53\", \"54\", \"55\", \"56\",
+                                     \"57\", \"58\", \"59\"),
+           BYMINUTE              SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
+                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
+                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
+                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
+                                     \"30\", \"31\", \"32\", \"33\", \"34\", \"35\", \"36\",
+                                     \"37\", \"38\", \"39\", \"40\", \"41\", \"42\", \"43\",
+                                     \"44\", \"45\", \"46\", \"47\", \"47\", \"48\", \"49\",
+                                     \"50\", \"51\", \"52\", \"53\", \"54\", \"55\", \"56\",
+                                     \"57\", \"58\", \"59\"),
+           BYHOUR                SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
+                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
+                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
+                                     \"23\"),
+           BYDAY                 TINYTEXT,
+           BYMONTHDAY            SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
+                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
+                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
+                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
+                                     \"30\", \"31\", \"-1\", \"-2\", \"-3\", \"-4\", \"-5\",
+                                     \"-6\", \"-7\", \"-8\", \"-9\", \"-10\", \"-11\",
+                                     \"-12\", \"-13\", \"-14\", \"-15\", \"-16\", \"-17\",
+                                     \"-18\", \"-19\", \"-20\", \"-21\", \"-22\", \"-23\",
+                                     \"-24\", \"-25\", \"-26\", \"-27\", \"-28\", \"-29\",
+                                     \"-30\", \"-31\"),
+           BYYEARDAY             TINYTEXT,
+           BYWEEKNO              TINYTEXT,
+           BYMONTH               SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
+                                     \"9\", \"10\", \"11\", \"12\"),
+           BYSETPOS              TINYTEXT,
+           WKST                  SET(\"SU\", \"MO\", \"TU\", \"WE\", \"TH\", \"FR\", \"SA\"),
+           XPARAM                INTEGER                 /* VALUE_KEY */
+   )"
 
 static void		mysqldrv_freestream(CALSTREAM *stream);
 static bool		mysqldrv_mysql_query(CALSTREAM *stream, const char *query);
@@ -73,9 +132,9 @@ static CALSTREAM*	mysqldrv_close( CALSTREAM *stream,
 static bool		mysqldrv_ping ( CALSTREAM *stream );
 static bool		mysqldrv_create ( CALSTREAM *stream,
                                         const char *calendar );
-//static bool		mysqldrv_search_range(	CALSTREAM *stream,
-//						const datetime_t *start,
-//						const datetime_t *end);
+static bool		mysqldrv_search_range(	CALSTREAM *stream,
+						const datetime_t *start,
+						const datetime_t *end);
 //static bool		mysqldrv_search_alarm(	CALSTREAM *stream,
 //						const datetime_t *when);
 //static bool		mysqldrv_fetch(	CALSTREAM *stream,
@@ -99,7 +158,7 @@ CALDRIVER mysqldrv_driver =
 	mysqldrv_close,
 	mysqldrv_ping,
 	mysqldrv_create,
-//	mysqldrv_search_range,
+	mysqldrv_search_range,
 //	mysqldrv_search_alarm,
 //	mysqldrv_fetch,
 //	mysqldrv_append,
@@ -114,6 +173,7 @@ mysqldrv_freestream(CALSTREAM *stream)
 	if (stream) {
 		if (DATA) {
 			mysql_close( DATA );
+			free(DATA);
 		}
 		free(stream);
 	}
@@ -161,86 +221,28 @@ mysqldrv_ping(CALSTREAM *stream)
 bool
 mysqldrv_create( CALSTREAM *stream, const char *calendar ) {
     bool output;
-    char *query;
-    char *str_temp;
+    char buffer[6000];
 
-    str_temp = VEVENT_TABLE;
-    query = VEVENT_TABLE;
-//    query = stpcpy (query + strlen (query), "foo");
-//    strcat (query, "calendar");
-//    strcat (query, str_temp); 
-    mysqldrv_mysql_query(stream, query);
+    strcpy (buffer, "CREATE TABLE ");
+    strcat (buffer, calendar);
+    strcat (buffer, VEVENT_TABLE);
+    mysqldrv_mysql_query(stream, buffer);
 
-    query = "
-   CREATE TABLE X_PROP (
-           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
-           VALUE                    TEXT NOT NULL,
-           NAME                     TEXT NOT NULL,
-           PARAMS                   INTEGER             /* VALUE_KEY (XPARAM)*/
-   )";
-    mysqldrv_mysql_query(stream, query);
+    strcpy (buffer, "CREATE TABLE ");
+    strcat (buffer, calendar);
+    strcat (buffer, X_PROP_TABLE);
+    mysqldrv_mysql_query(stream, buffer);
 
+    strcpy (buffer, "CREATE TABLE ");
+    strcat (buffer, calendar);
+    strcat (buffer, XPARAM_TABLE);
+    mysqldrv_mysql_query(stream, buffer);
 
-    query = "
-   CREATE TABLE XPARAM (
-           VALUE_KEY                INTEGER NOT NULL PRIMARY KEY,
-           VALUE                    TEXT NOT NULL,
-           NAME                     TEXT NOT NULL
-   )";
-    mysqldrv_mysql_query(stream, query);
-
-
-    query = "
-   CREATE TABLE RRULE (
-           VALUE_KEY             INTEGER NOT NULL PRIMARY KEY,
-           FREQ                  ENUM(\"SECONDLY\", \"MINUTELY\", \"HOURLY\",
-                                   \"DAILY\", \"WEEKLY\", \"MONTHLY\", \"YEARLY\"),
-           UNTIL                 TIMESTAMP(14),
-           COUNT                 INTEGER,
-           INTERVAL_VAL          INTEGER,
-           BYSECOND              SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
-                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
-                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
-                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
-                                     \"30\", \"31\", \"32\", \"33\", \"34\", \"35\", \"36\",
-                                     \"37\", \"38\", \"39\", \"40\", \"41\", \"42\", \"43\",
-                                     \"44\", \"45\", \"46\", \"47\", \"47\", \"48\", \"49\",
-                                     \"50\", \"51\", \"52\", \"53\", \"54\", \"55\", \"56\",
-                                     \"57\", \"58\", \"59\"),
-           BYMINUTE              SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
-                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
-                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
-                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
-                                     \"30\", \"31\", \"32\", \"33\", \"34\", \"35\", \"36\",
-                                     \"37\", \"38\", \"39\", \"40\", \"41\", \"42\", \"43\",
-                                     \"44\", \"45\", \"46\", \"47\", \"47\", \"48\", \"49\",
-                                     \"50\", \"51\", \"52\", \"53\", \"54\", \"55\", \"56\",
-                                     \"57\", \"58\", \"59\"),
-           BYHOUR                SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
-                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
-                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
-                                     \"23\"),
-           BYDAY                 TINYTEXT,
-           BYMONTHDAY            SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
-                                     \"9\", \"10\", \"11\", \"12\", \"13\", \"14\", \"15\",
-                                     \"16\", \"17\", \"18\", \"19\", \"20\", \"21\", \"22\",
-                                     \"23\", \"24\", \"25\", \"26\", \"27\", \"28\", \"29\",
-                                     \"30\", \"31\", \"-1\", \"-2\", \"-3\", \"-4\", \"-5\",
-                                     \"-6\", \"-7\", \"-8\", \"-9\", \"-10\", \"-11\",
-                                     \"-12\", \"-13\", \"-14\", \"-15\", \"-16\", \"-17\",
-                                     \"-18\", \"-19\", \"-20\", \"-21\", \"-22\", \"-23\",
-                                     \"-24\", \"-25\", \"-26\", \"-27\", \"-28\", \"-29\",
-                                     \"-30\", \"-31\"),
-           BYYEARDAY             TINYTEXT,
-           BYWEEKNO              TINYTEXT,
-           BYMONTH               SET(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\", \"8\",
-                                     \"9\", \"10\", \"11\", \"12\"),
-           BYSETPOS              TINYTEXT,
-           WKST                  SET(\"SU\", \"MO\", \"TU\", \"WE\", \"TH\", \"FR\", \"SA\"),
-           XPARAM                INTEGER                 /* VALUE_KEY */
-   )";
-    mysqldrv_mysql_query(stream, query);
-
+    strcpy (buffer, "CREATE TABLE ");
+    strcat (buffer, calendar);
+    strcat (buffer, RRULE_TABLE);
+    mysqldrv_mysql_query(stream, buffer);
+ 
     return output;
 }
 
@@ -293,4 +295,109 @@ fail:
 	return NULL;
 }
 
+bool
+mysqldrv_search_range(	CALSTREAM *stream, const datetime_t *start, const datetime_t *end) {
+
+not supported:
+ COUNT
+ BYDAY (list of dates)
+ BYSECOND
+ BYMINUTE
+ BYHOUR
+ BYWEEKNO (week of year)
+ BYSETPOS (wacky, wacky)
+ WKST assumed to be sunday 
+
+
+sql pseudocode    
+    SELECT UID 
+    FROM lauren_VEVENT --joined to lauren_RRULE
+    WHERE DTSTART <= start_unix
+          AND
+          (
+            ( DTEND >= end_unix )
+            OR
+            (
+              ( UNTIL >= end_unix ) 
+              AND
+              (
+                ( FREQ = "DAILY"
+                  AND
+                  INTERVAL_VAL - MOD((start_days-TO_DAYS(FROM_UNIXTIME(DTSTART))),INTERVAL_VAL) <= end_days-start_days
+                )
+                OR
+                ( FREQ = "WEEKLY"
+                  AND
+generate based on days in start..end
+                  ((BYDAY LIKE "%MO%")OR(BYDAY LIKE "....))
+this code does not identify interval steps, may incorrectly identify
+                )
+                OR
+                ( FREQ = "MONTHLY"
+                  AND
+                  IS NULL(BYDAY)
+                  AND
+                  INTERVAL_VAL- ((start_month-MONTH(FROM_UNIXTIME(DTSTART))+12*(start_year-YEAR(FROM_UNIXTIME(DTSTART)))mod INTERVAL_VAL <= (end_month - start_month)+12*(end_year-start_year)
+                  AND
+                  DAYOFMONTH(DTSTART) >= start_dayofmonth
+                  AND
+                  DAYOFMONTH(DTSTART) <= end_dayofmonth
+                )
+                OR
+                ( FREQ = "MONTHLY"
+                  AND
+                  IS NOT NULL(BYDAY)
+                  AND
+not done                            
+                )
+                OR
+                ( FREQ = "YEARLY"
+                  AND
+                  IS NULL(BYDAY)
+                  AND
+                  DAYOFYEAR(DTSTART)>=start_dayofyear
+                  AND
+                  DAYOFYEAR(DTSTART)<=end_dayofyear
+                )
+              )
+            )
+          )
+          
+
+original pseudocode
+          
+        switch (RRULE)
+            case(NULL)
+                DTSTART <=(timestamp)start
+                and DTEND >=(timestamp)end
+            else
+                switch(FREQ)
+                    case(DAILY) //INTERVAL_VAL
+                        DTSTART <=(timestamp)start
+                        and UNTIL >=(timestamp)end
+                        and start+(INTERVAL_VAL- (start-DTSTART)mod INTERVAL_VAL) <= end
+                    case(WEEKLY)//BYDAY,INTERVAL_VAL,
+************
+
+                    case(MONTHLY)  //monthly by day, date
+                        switch(BYDAY)
+                            case(NULL) //monthly by date
+                                DTSTART <=(timestamp)start
+                                and UNTIL >=(timestamp)end
+                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
+                                and dayofmonth(DTSTART) >= start-firstdayofmonth
+                                and dayofmonth(DTSTART) <= end-firstdayofmonth
+                            else //monthly by day
+                                DTSTART <=(timestamp)start
+                                and UNTIL >=(timestamp)end
+                                and month(start)+(INTERVAL_VAL- (month(start)-month(DTSTART))mod INTERVAL_VAL) <= month(end)
+                                and dayofmonth(BYDAY rule) >= start-firstdayofmonth
+                                and dayofmonth(BYDAY rule) <= end-firstdayofmonth
+                                
+                    case(YEARLY)
+                        DTSTART <=(timestamp)start
+                        and UNTIL >=(timestamp)end
+                        and dayofyear(DTSTART)>=start-firstdayofyear
+                        and dayofyear(DTSTART)<=end-firstdayofyear
+}
 
