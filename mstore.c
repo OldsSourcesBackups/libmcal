@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.14 2000/05/11 19:45:23 inan Exp $ */
+/* $Id: mstore.c,v 1.15 2000/10/02 14:27:53 rufustfirefly Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,7 +15,10 @@
 #define	DATA_T	struct mstore_data
 #define	DATA	((DATA_T*) stream->data)
 
-
+/* mpasswd path define */
+#ifndef MPASSWD_PATH
+#define MPASSWD_PATH "/etc/mpasswd"
+#endif
 
 static void		mstore_freestream(CALSTREAM *stream);
 static bool		mstore_validuser(const char *username,const char *password);
@@ -96,7 +99,7 @@ mstore_validuser(const char *username,const char *password)
   FILE *mpasswd;
   char line[1000];
   char *musername,*mpassword;
-  mpasswd=fopen("/etc/mpasswd","r");
+  mpasswd=fopen(MPASSWD_PATH,"r");
   if(!mpasswd)
     {
       printf("Error! couldn't open mpasswd file!\n");
@@ -134,7 +137,7 @@ mstore_userexists(const char *username)
   FILE *mpasswd;
   char line[1000];
   char *musername,*mpassword;
-  mpasswd=fopen("/etc/mpasswd","r");
+  mpasswd=fopen(MPASSWD_PATH,"r");
   if(!mpasswd)
     {
       printf("Error! couldn't open mpasswd file!\n");
