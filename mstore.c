@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.7 2000/01/28 00:04:04 markie Exp $ */
+/* $Id: mstore.c,v 1.8 2000/01/28 01:35:50 markie Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -299,7 +299,12 @@ write_event(FILE *calfile, const CALEVENT *event)
 	char		*buf;
 
 	tmp = icalout_begin();
-	icalout_event(tmp, event);
+	if(!icalout_event(tmp, event))
+	  {
+	    printf("Error writing to tmp file!");
+	    perror("write_event");
+	    return false;
+	  }
 	buf = icalout_end(tmp);
 
 	if (buf == NULL)
