@@ -1,5 +1,5 @@
 /*
- *	#$Id: icaproutines.c,v 1.1 1999/12/02 08:02:27 zircote Exp $
+ *	#$Id: icaproutines.c,v 1.2 2000/01/20 01:47:18 askalski Exp $
  *
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -460,6 +460,7 @@ bool
 ical_parse_vevent(CALEVENT *event)
 {
 	char		*ptr;
+	char		*name = NULL;
 	char		*value = NULL;
 	size_t		size;
 	int		token;
@@ -518,24 +519,33 @@ ical_parse_vevent(CALEVENT *event)
 			property = P_XRECURWEEKDAYS;
 		else if (VALUE_IS("x-recur-enddate"))
 			property = P_XRECURENDDATE;
+		else if ((name = strdup(ical_yytext)) == NULL)
+			return false;
 
 		while (NEXT_IS(ICALTOK_PARAMETER)) {
 			ptr = strchr(ical_yytext, '=');
 			*ptr++ = '\0';
 			if (!strcasecmp(ical_yytext, "encoding")) {
 				/* Only one encoding may be specified. */
-				if (encoding != E_NONE)
+				if (encoding != E_NONE) {
+					free(name);
 					return false;
+				}
 
 				if (!strcasecmp(ptr, "base64"))
 					encoding = E_BASE64;
-				else /* Unknown encoding. */
+				else {
+					/* Unknown encoding. */
+					free(name);
 					return false;
+				}
 			}
 		}
 
-		if (token != ICALTOK_VALUE)
+		if (token != ICALTOK_VALUE) {
+			free(name);
 			return false;
+		}
 
 		/* decode the value */
 		if (encoding == E_NONE) {
@@ -545,8 +555,10 @@ ical_parse_vevent(CALEVENT *event)
 		else if (encoding == E_BASE64) {
 			size = ical_yyleng;
 			value = icap_decode_base64(ical_yytext, &size);
-			if (value == NULL)
+			if (value == NULL) {
+				free(name);
 				return false;
+			}
 		}
 
 		switch (property) {
@@ -666,8 +678,15 @@ ical_parse_vevent(CALEVENT *event)
 			if (dt_hastime(&event->recur_enddate))
 				return false;
 			break;
+		case P_UNKNOWN:
+			if (	calevent_getattr(event, name) ||
+				!calevent_setattr(event, name, value))
+			{
+				free(name);
+				return false;
+			}
+			free(name);
 			break;
-		default:
 		}
 
 		if (!NEXT_IS(ICALTOK_LF))
