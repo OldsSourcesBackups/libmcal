@@ -1,6 +1,10 @@
-	$Id: CHANGELOG,v 1.1 1999/12/02 08:01:39 zircote Exp $
+	$Id: CHANGELOG,v 1.2 2001/07/03 16:03:19 rufustfirefly Exp $
 
-CHANGELOG:
+* Tue Jul 03 2001  rufustfirefly
+  - Makefile.in: modified to support building a shared object (libmcal.so)
+    to hopefully kill the building problems with PHP
+
+----
 
 Version 0.99
 -Corrected Versioning Mistake in libmcal.h - allen

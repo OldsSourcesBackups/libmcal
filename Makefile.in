@@ -1,4 +1,4 @@
-# 	$Id: Makefile.in,v 1.4 2001/04/20 19:51:34 chuck Exp $
+# 	$Id: Makefile.in,v 1.5 2001/07/03 16:03:19 rufustfirefly Exp $
 
 CC=gcc
 FLEX=flex
@@ -7,7 +7,7 @@ FLEX=flex
 
 INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
 
-CFLAGS=-O0 -Wall -g ${INCLUDE}
+CFLAGS=-O0 -Wall -g ${INCLUDE} ${OTHER_CFLAGS}
 
 LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS)
 ALLOBJS=${LIBOBJS} tester.o
@@ -15,20 +15,30 @@ OTHERLIBS=${OTHERLIBS}
 OTHERLIBDIR=${OTHERLIBDIR}
 
 LIBCAL=libmcal.a
+LIBCAL_SO=libmcal.so
 
-all: libmcal.a
+all: libmcal.a libmcal.so
 
-install: libmcal.a
+install: libmcal.a libmcal.so
 	mkdir -p ${DESTDIR}@prefix@/lib/
 	mkdir -p ${DESTDIR}@prefix@/include/mcal/
-	install -m 755 -o 0 -g 0 libmcal.a ${DESTDIR}@prefix@/lib
+	install -m 755 -o 0 -g 0 libmcal.a libmcal.so ${DESTDIR}@prefix@/lib
 	install -m 644 -o 0 -g 0 \
 	  mcal.h bool.h datetime.h drivers.h cal_misc.h icalroutines.h \
 	  ${DESTDIR}@prefix@/include/mcal/
+	touch installed
+
+install-strip: installed
+	strip ${DESTDIR}@prefix@/lib/libmcal.so
+	strip ${DESTDIR}@prefix@/lib/libmcal.a
 
 libmcal.a: $(LIBOBJS)
 	rm -f $(LIBCAL)
 	ar r $(LIBCAL) $(LIBOBJS)
+
+libmcal.so: $(LIBOBJS)
+	rm -f $(LIBCAL_SO)
+	gcc $(CFLAGS) -shared -o $(LIBCAL_SO) $(LIBOBJS)
 
 lex.ical_yy.c: icalscanner.lex
 	$(FLEX) $<
@@ -37,7 +47,7 @@ tester: tester.o libmcal.a
 	gcc -Wall -g -o tester tester.o $(LIBCAL) -lcrypt
 
 clean:
-	rm -f *.o *~ core $(LIBCAL) tester  
+	rm -f *.o *~ core $(LIBCAL) $(LIBCAL_SO) tester installed 
 
 distclean: clean
 	rm -f  config.cache  config.status config.log Makefile drivers.c drivers.h bootstrap.in
