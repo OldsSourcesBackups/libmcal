@@ -1,0 +1,20 @@
+$Id: README,v 1.1 1999/12/02 08:02:58 zircote Exp $
+This is the mstore driver.
+It uses a local filesystem to store calendars for users.
+The base directory for calendars is: "/var/calendar"
+each calendar is simply named the users username.
+i.e. the user john will have a /var/calendar/john file.
+becuase of this, /var/calendar should be world or group writable, 
+with the sticky bit turned on (like /var/spool/mail directory)
+to prevent tampering.
+
+The mstore driver also uses a file /etc/mpasswd.
+this file should be world readable, and is the password file that
+it uses. The password file uses the same file format as apache's
+.htpasswd file. It is of the form username:encryptedpassword
+The encrypted password uses the normal unix crypt function,
+with the salt being the first two characters.
+
+You can use the htpasswd program that comes with apache to
+add or change a users password. 
+

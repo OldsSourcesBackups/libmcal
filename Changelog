@@ -1,0 +1,14 @@
+$Id: Changelog,v 1.1 1999/12/02 08:02:57 zircote Exp $
+
+Version 0.3
+
+Version 0.2
+-Prepared For Version 0.3 Release -allen
+-Added CVS Strings -allen
+-Added To CVS Repository -allen
+-Made MCAL_DIR a global string that is where the calendar sotre base is located
+Version 0.1
+- Added Changelog
+- Changed the driver to use /var/calendar for the calendar store
+- Changed the driver to use /etc/mpasswd for the password file
+- Changed the driver to use encrypted passwords
