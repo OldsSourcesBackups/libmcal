@@ -2,7 +2,7 @@
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  * 
- *	#$Id: icap.c,v 1.3 2000/07/06 13:48:00 markie Exp $
+ *	#$Id: icap.c,v 1.4 2000/07/07 15:16:18 markie Exp $
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -297,7 +297,7 @@ icap_search_alarm(CALSTREAM *stream, const datetime_t *when)
 	if (dt_empty(when))
 		return false;
 
-	sprintf(query,	"UID SEARCH ALARMING %04u%02u%02uT%02u%02u%02uZ",
+	sprintf(query,	"UID SEARCH COMPONENT VALARM ICAL DTSTART =  %04u%02u%02uT%02u%02u%02uZ",
 			when->year, when->mon, when->mday,
 			when->hour, when->min, when->sec);
 
@@ -382,9 +382,9 @@ icap_remove(CALSTREAM *stream, unsigned long id)
 {
 	char		query[1024];
 
-	if (!icap_begin(DATA->net, "UID REMOVE "))
+	if (!icap_begin(DATA->net, "UID STORE "))
 		return false;
-	sprintf(query, "%lu", id);
+	sprintf(query, "%lu +FLAGS \\Deleted", id);
 	if (!icap_opaque(DATA->net, query))
 		return false;
 	if (icap_end(DATA->net) != ICAP_OK)
