@@ -1,5 +1,5 @@
 /*
- *	$Id: datetime.h,v 1.1 1999/12/02 08:01:40 zircote Exp $
+ *	$Id: datetime.h,v 1.2 2000/03/11 02:14:43 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -174,6 +174,9 @@ bool	dt_setweekof(	datetime_t *dt, const datetime_t *ref,
 
 /* sets the datetime from year, month, week and day */
 bool	dt_setnthwday(datetime_t *dt, int year, int mon, int nth, int wday);
+
+/* Returns the week number for d=day, m=month, y=year */
+int 	dt_weekofyear(int d, int m, int y);
 
 /* convenience macros to get the first/last days of a week */
 #define	dt_startofweek(dt, ref, weekstart) \

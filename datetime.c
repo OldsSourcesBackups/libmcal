@@ -1,5 +1,5 @@
 /*
- *	$Id: datetime.c,v 1.1 1999/12/02 08:01:40 zircote Exp $
+ *	$Id: datetime.c,v 1.2 2000/03/11 02:14:42 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -437,4 +437,26 @@ dt_setnthwday(datetime_t *dt, int year, int mon, int nth, int wday)
 	tmp.mday += 7 * nth - 6;
 
 	return dt_setdate(dt, year, mon, tmp.mday);
+}
+
+int
+julian(int d, int m, int y)
+{
+	int n1, n2;
+	n1 = 12 * y + m - 3;
+	n2 = n1/12;
+	return (734 * n1 + 15)/24 - 2 * n2 + n2/4 - n2/100 + n2/400 + d + 1721119;
+}
+
+int 
+dt_weekofyear(int d, int m, int y)
+{
+	int n1, n2, w;
+	n1 = julian(d, m, y);
+	n2 = 7 * (n1/7) + 10;
+	y++;
+	while ((w = (n2 - julian(1, 1, y))/7) <= 0) {
+		y--;
+	}
+	return w;
 }
