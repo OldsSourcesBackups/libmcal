@@ -2,7 +2,7 @@
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  * 
- *	#$Id: icap.c,v 1.2 2000/05/11 19:46:25 inan Exp $
+ *	#$Id: icap.c,v 1.3 2000/07/06 13:48:00 markie Exp $
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -267,12 +267,12 @@ icap_search_range(	CALSTREAM *stream,
 
 	endq = query;
 	if (start && dt_hasdate(start)) {
-		endq += sprintf(endq, " ICAL DTSTART>=%04u%02u%02u",
-			start->year, start->mon, start->mday);
+		endq += sprintf(endq, " ICAL DTSTART > %04u%02u%02u",
+			start->year, start->mon, start->mday-1);
 	}
 	if (end && dt_hasdate(end)) {
-		endq += sprintf(endq, " ICAL DTSTART<=%04u%02u%02u",
-			end->year, end->mon, end->mday);
+		endq += sprintf(endq, " ICAL DTSTART < %04u%02u%02u",
+			end->year, end->mon, end->mday+1);
 	}
 	if (endq == query)
 		strcpy(query, " ALL");
