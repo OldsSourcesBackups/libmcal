@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.5 2000/02/28 00:42:14 chuck Exp $
+ *	$Id: mcal.h,v 1.6 2000/03/27 04:00:33 zircote Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -43,7 +43,7 @@
 #define	DEFAULT_PROTO	"icap"
 
 /* calendar library version */
-#define CALVER		"0.5"
+#define CALVER		"0.6"
 
 /* calendar library date */
 #define MCALVER		20000121
