@@ -1,5 +1,5 @@
 /*
- *	#$Id: icaproutines.c,v 1.2 2000/01/20 01:47:18 askalski Exp $
+ *	#$Id: icaproutines.c,v 1.3 2000/01/21 21:15:33 markie Exp $
  *
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -821,6 +821,7 @@ bool
 icalout_event(FILE *tmp, const CALEVENT *event)
 {
 	datetime_t	dt;
+	CALATTR *attr;
 
 	fputs("BEGIN:VEVENT\r\n", tmp);
 	if (event->id) {
@@ -879,6 +880,14 @@ icalout_event(FILE *tmp, const CALEVENT *event)
 			icalout_number(tmp, event->recur_data.weekly_wday);
 		}
 	}
+	if(event->attrlist)
+	  {
+	    for (attr = event->attrlist; attr; attr = attr->next) {
+	      icalout_label(tmp,attr->name);
+	      icalout_string(tmp,attr->value);
+	    }
+	    
+	  }
 
 	fputs("END:VEVENT\r\n", tmp);
 
