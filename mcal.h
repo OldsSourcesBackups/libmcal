@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.h,v 1.1 1999/12/02 08:01:40 zircote Exp $
+ *	$Id: mcal.h,v 1.2 2000/01/19 18:58:26 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -50,7 +50,7 @@
 #define	CALSTREAM	struct cal_stream
 #define	CALADDR		struct cal_addr
 #define	CALEVENT	struct cal_event
-
+#define EVENTDATA       struct event_data
 
 /* calendar options */
 enum {
@@ -97,6 +97,13 @@ typedef union recurdata
 } recurdata_t;
 
 
+/* driver specific linked list data */
+EVENTDATA {
+  char *attribute;
+  char *value;
+  EVENTDATA * next;
+};
+
 /* event structure */
 CALEVENT {
 	unsigned long		id;		/* ID number */
@@ -115,6 +122,7 @@ CALEVENT {
 	long			recur_interval;	/* recurrence interval */
 	datetime_t		recur_enddate;	/* last recurrence */
 	recurdata_t		recur_data;	/* type-specific data */
+	EVENTDATA *data;
 };
 
 

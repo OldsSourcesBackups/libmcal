@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.1 1999/12/02 08:01:40 zircote Exp $
+ *	$Id: mcal.c,v 1.2 2000/01/19 18:58:26 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -290,10 +290,23 @@ calevent_new(void)
 CALEVENT*
 calevent_free(CALEVENT *event)
 {
+EVENTDATA *next;
 	if (event) {
 		free(event->category);
 		free(event->title);
 		free(event->description);
+		if(event->data)
+		  {
+
+		    while(event->data)
+		      {
+			next=event->data->next;
+			free(event->data->attribute);
+			free(event->data->value);
+			free(event->data->next);
+			event->data=next;
+		      }
+		  }
 		free(event);
 	}
 	return NULL;
