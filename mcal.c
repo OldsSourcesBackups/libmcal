@@ -1,5 +1,5 @@
 /*
- *	$Id: mcal.c,v 1.3 2000/01/20 01:47:18 askalski Exp $
+ *	$Id: mcal.c,v 1.4 2000/01/22 02:47:09 markie Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -361,8 +361,8 @@ calevent_setattr(CALEVENT *event, const char *name, const char *value)
 			}
 
 			attr->prev = &event->attrlist;
-			attr->next = event->attrlist;
-			event->attrlist->prev = &attr->next;
+			if ((attr->next = event->attrlist))
+				event->attrlist->prev = &attr->next;
 			event->attrlist = attr;
 		}
 
