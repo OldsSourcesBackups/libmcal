@@ -1,2 +1,8 @@
 *~
 *.bak
+config.*
+bootstrap.in
+Makefile
+drivers.h
+drivers.c
+lex.ical_yy.c
