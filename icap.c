@@ -2,7 +2,7 @@
  * Libmcal - Modular Calendar Access Library 
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  * 
- *	#$Id: icap.c,v 1.1 1999/12/02 08:02:27 zircote Exp $
+ *	#$Id: icap.c,v 1.2 2000/05/11 19:46:25 inan Exp $
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -49,6 +49,7 @@ static CALSTREAM*	icap_open(	CALSTREAM *stream,
 					const CALADDR *addr, long options);
 static CALSTREAM*	icap_close(CALSTREAM *stream, long options);
 static bool		icap_ping(CALSTREAM *stream);
+static bool		icap_create(CALSTREAM *stream, const char *calendar);
 static bool		icap_search_range(	CALSTREAM *stream,
 						const datetime_t *start,
 						const datetime_t *end);
@@ -72,6 +73,7 @@ const CALDRIVER icap_driver =
 	icap_open,
 	icap_close,
 	icap_ping,
+	icap_create,
 	icap_search_range,
 	icap_search_alarm,
 	icap_fetch,
@@ -239,6 +241,13 @@ icap_ping(CALSTREAM *stream)
 	if (icap_end(DATA->net) != ICAP_OK)
 		return false;
 	return true;
+}
+
+
+bool
+icap_create(CALSTREAM *stream, const char *calendar)
+{
+	return false;
 }
 
 
