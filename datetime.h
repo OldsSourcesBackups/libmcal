@@ -1,5 +1,5 @@
 /*
- *	$Id: datetime.h,v 1.3 2000/05/11 19:43:23 inan Exp $
+ * $Id: datetime.h,v 1.4 2001/03/16 19:27:14 chuck Exp $
  * Libmcal - Modular Calendar Access Library
  * Copyright (C) 1999 Mark Musone and Andrew Skalski
  *
@@ -26,7 +26,7 @@
  * Andrew Skalski
  * askalski@chek.com
  *
- * mcal@lists.chek.com
+ * libmcal-users@lists.sourceforge.net
  */
 
 #ifndef	_DATETIME_H
