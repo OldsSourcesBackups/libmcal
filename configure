@@ -1,6 +1,6 @@
 #! /bin/sh
 
-#	$Id: configure,v 1.1 1999/12/02 08:01:40 zircote Exp $
+#	$Id: configure,v 1.2 2000/09/18 19:55:36 markie Exp $
 # Guess values for system-dependent variables and create Makefiles.
 # Generated automatically using autoconf version 2.13 
 # Copyright (C) 1992, 93, 94, 95, 96 Free Software Foundation, Inc.
@@ -53,7 +53,10 @@ rm -f bootstrap.in
 rm -f  drivers.h
 touch drivers.h
 rm --force drivers.c
-echo -e 'static const CALDRIVER *driver_registry\133\135 = {' > drivers.c
+#echo -e 'static const CALDRIVER *driver_registry\133\135 = {' > drivers.c
+cat > drivers.c << EOF
+static const CALDRIVER *driver_registry[] = {
+EOF
 #
 # Initialize some other variables.
 subdirs=
