@@ -1,4 +1,4 @@
-/* $Id: mstore.c,v 1.16 2000/10/05 17:38:18 rufustfirefly Exp $ */
+/* $Id: mstore.c,v 1.17 2000/10/25 18:30:59 rufustfirefly Exp $ */
 
 #include <stdlib.h>
 #include <string.h>
@@ -204,11 +204,15 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 
 		cc_login(&username, &password);
 		if (username == NULL) {
+			#ifdef DEBUG
 			printf("\nNULL username\n");
+			#endif
 			goto fail;
 		}
 		if (!mstore_validuser(username,password)) {
+			#ifdef DEBUG
 			printf("\n!mstore_validuser(%s,%s)\n",username,password);
+			#endif
 			goto fail;
 		}
 	}
@@ -223,16 +227,20 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 	if (options & CAL_LOGIN) {
 		/* Copy login_userbuf, folder. */
 		if ((DATA->login_userbuf = strdup(username)) == NULL) {
+			#ifdef DEBUG
 			printf("\ncouldn't get login_userbuf (%s)\n",
 				username);
+			#endif
 			goto fail;
 		}
 
 	}
 
 	if ((DATA->folder = strdup(addr->folder)) == NULL) {
+		#ifdef DEBUG
 		printf("\ncouldn't get folder (%s)\n",
 			addr->folder);
+		#endif
 		goto fail;
 	}
 
@@ -246,8 +254,10 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 		if (addr->user) {
 		  /* Copy and split folder_userbuf */
 		  if ((DATA->folder_userbuf = strdup(addr->user)) == NULL) {
+#ifdef DEBUG
 			printf("\ncouldn't get folder_userbuf (%s)\n",
 				addr->user);
+#endif
 		    goto fail;
 		  }
 		  /* Check for identical folder/login users. */

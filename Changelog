@@ -1,6 +1,7 @@
-$Id: Changelog,v 1.2 2000/10/05 17:38:18 rufustfirefly Exp $
+$Id: Changelog,v 1.3 2000/10/25 18:30:59 rufustfirefly Exp $
 
 Version 0.3
+ - #ifdef DEBUG'd most of the debugging messages (rufustfirefly)
  - mstore_create is no longer a stub, still have not added support for
    heirarchical directory creation or checking for bad args (rufustfirefly)
  - Cleaned up Changelog (rufustfirefly)
