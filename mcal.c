@@ -1,6 +1,6 @@
 /*
 
-	$Id: mcal.c,v 1.2 2000/01/19 18:57:49 markie Exp $
+	$Id: mcal.c,v 1.3 2000/01/22 03:08:51 markie Exp $
 
     mcal - libmcal powered cal replacement
     Copyright (C) 1999 Mark Musone and Andrew Skalski
@@ -63,10 +63,11 @@ int main(int argc, char **argv)
   int month;
   int day;
   int c;
+  CALATTR *attr=NULL;
  // int digit_optind = 0;
   char *foldername;
   datetime_t startdate,enddate;
-  CALEVENT *event;
+  CALEVENT *event=NULL;
   const char *months[]={NULL,"January","February","March","April","May","June","July","August","September","October","November","December"};
 
   domain=getenv("ICAP_DOMAIN");
@@ -346,6 +347,10 @@ else
 	 printf("Description: %s\n",event->description);
 	 printf("Public: %s\n",event->public ? "Yes" : "No" );
 	 printf("Start: %s %d %d - %d:%02d:%02d\n",months[event->start.mon],event->start.mday,event->start.year,event->start.hour,event->start.min,event->start.sec);
+	 for (attr = event->attrlist; attr; attr = attr->next) {
+	 printf("%s: %s\n",attr->name,attr->value);
+	 
+	 }
 	 calevent_free(event);
        }
      free(eventlist);
