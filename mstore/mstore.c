@@ -412,11 +412,11 @@ CALEVENT *read_event(FILE *calfile)
 {
 	char		line[100];
 	char		*buf;
-	int		size;
+	size_t		size;
 	CALEVENT	*event;
 
 	fgets(line, sizeof(line), calfile);
-	if (sscanf(line, "%d", &size) != 1)
+	if (sscanf(line, "%zu", &size) != 1)
 		return NULL;
 	buf = malloc(size + 2);
 	fread(buf, size, 1, calfile);
@@ -454,7 +454,7 @@ write_event(FILE *calfile, const CALEVENT *event)
 	if (buf == NULL)
 		return false;
 
-	fprintf(calfile, "%u\r\n", strlen(buf));
+	fprintf(calfile, "%zu\r\n", strlen(buf));
 	fputs(buf, calfile);
 	free(buf);
 
@@ -773,7 +773,7 @@ if(!modified_event->id)
         while((event=read_event(calfile))) {
 	  if (event->id == modified_event->id)
 	    {
-	    event = modified_event;         
+	    event = (CALEVENT*)modified_event;         
 	  /*is more required here to assign objects, a loop through all the properties*/
 	    /*    We actually only want to modify any individual property, not the whole thing..
 		  TODO */

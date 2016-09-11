@@ -164,7 +164,7 @@ icap_literal(ICAPNET *net, const char *arg)
 	icapresp_t	resp;
 	char		tag[ICAPMAXTAG];
 
-	fprintf(net->out, " {%u}\r\n", strlen(arg));
+	fprintf(net->out, " {%zu}\r\n", strlen(arg));
 
 	do {
 		resp = icap_getresp(net, tag, ICAPMAXTAG);
