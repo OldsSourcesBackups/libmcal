@@ -23,17 +23,19 @@ all: libmcal.a libmcal.so mcal
 	cd $$(dirname $<);$(CC) $(CFLAGS) $(INCLUDE) -c $$(basename $<)
 
 install: libmcal.a libmcal.so
-	mkdir -p ${DESTDIR}@libdir@
-	mkdir -p ${DESTDIR}@includedir@/mcal
-	install -m 755 libmcal.a libmcal.so ${DESTDIR}@libdir@/
+	mkdir -p ${DESTDIR}@prefix@/bin
+	mkdir -p ${DESTDIR}@prefix@/lib
+	mkdir -p ${DESTDIR}@prefix@/include/mcal
+	install -m 755 mcal/mcal ${DESTDIR}@prefix@/bin
+	install -m 755 libmcal.a libmcal.so ${DESTDIR}@prefix@/lib
 	install -m 644  \
 	  mcal.h bool.h datetime.h drivers.h cal_misc.h icalroutines.h \
-	  ${DESTDIR}@includedir@/mcal/
+	  ${DESTDIR}@prefix@/include/mcal/
 	touch installed
 
 install-strip: installed
-	strip ${DESTDIR}@libdir@/libmcal.so
-	strip ${DESTDIR}@libdir@/libmcal.a
+	strip ${DESTDIR}@prefix@/lib/libmcal.so
+	strip ${DESTDIR}@prefix@/lib/libmcal.a
 
 libmcal.a: $(LIBOBJS)
 	rm -f $(LIBCAL)
@@ -53,7 +55,7 @@ tester: tester.o libmcal.a
 	gcc -Wall -g -o tester tester.o $(LIBCAL) -lcrypt
 
 mcal: mcal/mcal.o libmcal.a
-	cd $$(dirname $<);gcc -Wall -g -o mcal mcal.o -L.. -lmcal -lcrypt
+	cd $$(dirname $<);gcc -Wall -g -o mcal mcal.o -Wl,-rpath=${DESTDIR}@prefix@/lib -L.. -lmcal -lcrypt
 
 clean:
 	rm -f *.o *~ core $(DRIVER_LIBS) $(LIBCAL) $(LIBCAL_SO) tester installed  lex.ical_yy.o mcal/mcal mcal/mcal.o
