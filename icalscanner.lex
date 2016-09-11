@@ -33,10 +33,9 @@
 
 #include "icalroutines.h"
 
-void
-ical_usebuf(const char *buf, size_t size)
+void ical_usebuf(const char *buf, size_t size)
 {
-	BEGIN(INITIAL);
+	BEGIN(0);
 	yy_scan_bytes(buf, size);
 }
 %}
@@ -68,3 +67,4 @@ IDCHAR		[a-zA-Z0-9]|"-"
 {LF}				BEGIN(INITIAL); return ICALTOK_LF;
 .				return ICALTOK_JUNK;
 <<EOF>>				return ICALTOK_EOF;
+

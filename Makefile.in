@@ -7,10 +7,10 @@ FLEX=flex
 
 INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
 
-CFLAGS=-O0 -Wall -g ${INCLUDE} ${OTHER_CFLAGS}
+CFLAGS=-O0 -Wall -g ${INCLUDE} ${OTHER_CFLAGS} -fPIC
 
-LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS)
-ALLOBJS=${LIBOBJS} tester.o
+LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS) tester.o
+ALLOBJS=${LIBOBJS}
 OTHERLIBS=${OTHERLIBS}
 OTHERLIBDIR=${OTHERLIBDIR}
 
@@ -19,18 +19,21 @@ LIBCAL_SO=libmcal.so
 
 all: libmcal.a libmcal.so
 
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+
 install: libmcal.a libmcal.so
-	mkdir -p ${DESTDIR}@prefix@/lib/
-	mkdir -p ${DESTDIR}@prefix@/include/mcal/
-	install -m 755 -o 0 -g 0 libmcal.a libmcal.so ${DESTDIR}@prefix@/lib
-	install -m 644 -o 0 -g 0 \
+	mkdir -p ${DESTDIR}@libdir@
+	mkdir -p ${DESTDIR}@includedir@/mcal
+	install -m 755 libmcal.a libmcal.so ${DESTDIR}@libdir@/
+	install -m 644  \
 	  mcal.h bool.h datetime.h drivers.h cal_misc.h icalroutines.h \
-	  ${DESTDIR}@prefix@/include/mcal/
+	  ${DESTDIR}@includedir@/mcal/
 	touch installed
 
 install-strip: installed
-	strip ${DESTDIR}@prefix@/lib/libmcal.so
-	strip ${DESTDIR}@prefix@/lib/libmcal.a
+	strip ${DESTDIR}@libdir@/libmcal.so
+	strip ${DESTDIR}@libdir@/libmcal.a
 
 libmcal.a: $(LIBOBJS)
 	rm -f $(LIBCAL)
@@ -38,7 +41,7 @@ libmcal.a: $(LIBOBJS)
 
 libmcal.so: $(LIBOBJS)
 	rm -f $(LIBCAL_SO)
-	gcc $(CFLAGS) -shared -o $(LIBCAL_SO) $(LIBOBJS)
+	gcc $(LDFLAGS) -shared -o $(LIBCAL_SO) $(LIBOBJS)
 
 lex.ical_yy.c: icalscanner.lex
 	$(FLEX) $<
