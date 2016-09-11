@@ -1,0 +1,8 @@
+($Id: ChangeLog,v 1.1 2001/04/16 18:07:15 rufustfirefly Exp $)
+
+2001-04-16  jeff b  <jeff@univrel.pr.uconn.edu>
+
+	* ChangeLog: started initial changelog
+
+	* Makefile: added -I../libmcal to CFLAGS for proper compile
+

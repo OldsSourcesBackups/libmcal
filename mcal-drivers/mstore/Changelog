@@ -1,0 +1,25 @@
+$Id: Changelog,v 1.4 2001/03/20 16:40:51 rufustfirefly Exp $
+
+Version 0.5
+ - optional PAM support (listed as libmcal, module mstore) through USE_PAM
+   define, enabled by default (rufustfirefly)
+ - make now builds without symlinks (rufustfirefly)
+
+Version 0.3
+ - #ifdef DEBUG'd most of the debugging messages (rufustfirefly)
+ - mstore_create is no longer a stub, still have not added support for
+   heirarchical directory creation or checking for bad args (rufustfirefly)
+ - Cleaned up Changelog (rufustfirefly)
+
+Version 0.2
+ - Prepared For Version 0.3 Release -allen
+ - Added CVS Strings -allen
+ - Added To CVS Repository -allen
+ - Made MCAL_DIR a global string that is where the calendar store base is
+   located
+
+Version 0.1
+ - Added Changelog
+ - Changed the driver to use /var/calendar for the calendar store
+ - Changed the driver to use /etc/mpasswd for the password file
+ - Changed the driver to use encrypted passwords
