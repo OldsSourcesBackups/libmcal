@@ -1,3 +1,5 @@
+*.o
+*.so
 *~
 *.bak
 lex.icap_yy.c
