@@ -5,10 +5,10 @@ FLEX=flex
 
 @BOOTSTRAP@
 
-INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
-
+INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I. -I..
 CFLAGS=-O0 -Wall -Wno-unused-function -g ${INCLUDE} ${OTHER_CFLAGS} -fPIC
 
+DRIVER_LIBS= mstore/mstore.o icap/icap.o icap/icaproutines.o icap/lex.icap_yy.o
 LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS) tester.o
 ALLOBJS=${LIBOBJS}
 OTHERLIBS=${OTHERLIBS}
@@ -17,10 +17,10 @@ OTHERLIBDIR=${OTHERLIBDIR}
 LIBCAL=libmcal.a
 LIBCAL_SO=libmcal.so
 
-all: libmcal.a libmcal.so
+all: libmcal.a libmcal.so mcal
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+	cd $$(dirname $<);$(CC) $(CFLAGS) $(INCLUDE) -c $$(basename $<)
 
 install: libmcal.a libmcal.so
 	mkdir -p ${DESTDIR}@libdir@
@@ -43,17 +43,23 @@ libmcal.so: $(LIBOBJS)
 	rm -f $(LIBCAL_SO)
 	gcc $(LDFLAGS) -shared -o $(LIBCAL_SO) $(LIBOBJS)
 
+icap/lex.icap_yy.c: icap/icapscanner.lex
+	cd $$(dirname $<);$(FLEX) $$(basename $<) 
+
 lex.ical_yy.c: icalscanner.lex
 	$(FLEX) $<
 
 tester: tester.o libmcal.a
 	gcc -Wall -g -o tester tester.o $(LIBCAL) -lcrypt
 
+mcal: mcal/mcal.o libmcal.a
+	cd $$(dirname $<);gcc -Wall -g -o mcal mcal.o -L.. -lmcal -lcrypt
+
 clean:
-	rm -f *.o *~ core $(LIBCAL) $(LIBCAL_SO) tester installed 
+	rm -f *.o *~ core $(DRIVER_LIBS) $(LIBCAL) $(LIBCAL_SO) tester installed  lex.ical_yy.o mcal/mcal mcal/mcal.o
 
 distclean: clean
-	rm -f  config.cache  config.status config.log Makefile drivers.c drivers.h bootstrap.in
+	rm -f  config.cache  config.status config.log Makefile drivers.c drivers.h bootstrap.in icap/lex.icap_yy.c lex.ical_yy.c
 
 
 dep: depend

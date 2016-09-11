@@ -9,3 +9,4 @@ drivers.h
 drivers.c
 installed
 lex.ical_yy.c
+*.a
