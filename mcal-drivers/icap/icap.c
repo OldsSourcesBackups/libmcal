@@ -159,7 +159,7 @@ icap_open(CALSTREAM *stream, const CALADDR *addr, long options)
 	if (!reopen) {
 		if ((stream = calloc(1, sizeof(*stream))) == NULL)
 			goto fail;
-		if ((DATA = calloc(1, sizeof(*DATA))) == NULL)
+		if ((stream->data = calloc(1, sizeof(*DATA))) == NULL)
 			goto fail;
 
 		/* Copy host. */

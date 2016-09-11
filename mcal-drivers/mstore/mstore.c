@@ -308,7 +308,7 @@ mstore_open(CALSTREAM *stream, const CALADDR *addr, long options)
 	if (!reopen) {
 		if ((stream = calloc(1, sizeof(*stream))) == NULL)
 			goto fail;
-		if ((DATA = calloc(1, sizeof(*DATA))) == NULL)
+		if ((stream->data = calloc(1, sizeof(*DATA))) == NULL)
 			goto fail;
 	}
 
@@ -773,7 +773,7 @@ if(!modified_event->id)
         while((event=read_event(calfile))) {
 	  if (event->id == modified_event->id)
 	    {
-	    (const CALEVENT*)event = modified_event;         
+	    event = modified_event;         
 	  /*is more required here to assign objects, a loop through all the properties*/
 	    /*    We actually only want to modify any individual property, not the whole thing..
 		  TODO */

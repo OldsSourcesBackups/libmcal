@@ -10,6 +10,8 @@ TARGET=mstore_driver.o
 
 all: $(TARGET)
 
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDE) -c $<
 
 $(TARGET): $(ALLOBJS)
 	ld -r -o $(TARGET) $(ALLOBJS)
