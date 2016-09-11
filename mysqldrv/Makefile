@@ -3,7 +3,7 @@
 CC=gcc
 FLEX=flex
 INCLUDE=-I.. -I../libmcal
-CFLAGS=-O0 -Wall -g $(INCLUDE)
+CFLAGS=-O0 -fPIC -Wall -g $(INCLUDE)
 ALLOBJS=mysqldrv.o
 TARGET=mysqldrv_driver.o
 
@@ -11,7 +11,7 @@ all: $(TARGET)
 
 
 $(TARGET): $(ALLOBJS)
-	ld -r -o $(TARGET) $(ALLOBJS) -L/usr/lib/mysql -lmysqlclient -lnsl
+	ld -r -o $(TARGET) $(ALLOBJS) -lmysqlclient -lnsl
 	touch bootstrap.in
 
 clean:

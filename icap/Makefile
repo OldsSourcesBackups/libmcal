@@ -3,7 +3,7 @@
 CC=gcc
 FLEX=flex
 INCLUDE=-I.. -I../libmcal
-CFLAGS=-O0 -Wall -g $(INCLUDE)
+CFLAGS=-O0 -fPIC -Wall -g $(INCLUDE)
 ALLOBJS=icap.o icaproutines.o lex.icap_yy.o
 TARGET=icap_driver.o
 

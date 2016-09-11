@@ -4,7 +4,7 @@ CC=gcc
 FLEX=flex
 INCLUDE=-I.. -I../libmcal
 # CFLAGS=-O0 -Wall -g $(INCLUDE) -DDEBUG -DUSE_PAM
-CFLAGS=-O0 -Wall -g $(INCLUDE) -DDEBUG
+CFLAGS=-O0 -fPIC -Wall -g $(INCLUDE) -DDEBUG
 ALLOBJS=mstore.o
 TARGET=mstore_driver.o
 
