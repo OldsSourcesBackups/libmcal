@@ -244,7 +244,7 @@ ical_parse_vevent(CALEVENT *event)
 		}
 		else if (encoding == E_BASE64) {
 			size = ical_yyleng;
-			value = cal_decode_base64(ical_yytext, &size);
+			value = (char *)cal_decode_base64((unsigned char *)ical_yytext, &size);
 			if (value == NULL) {
 				free(name);
 				return false;
@@ -542,7 +542,7 @@ void
 icalout_string(FILE *out, const char *value)
 {
 	fputs(";ENCODING=BASE64:", out);
-	ical_encode_base64(out, value, strlen(value));
+	ical_encode_base64(out, (const unsigned char *)value, strlen(value));
 	putc('\r', out);
 	putc('\n', out);
 }

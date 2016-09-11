@@ -7,7 +7,7 @@ FLEX=flex
 
 INCLUDE=@DRIVER_INCDIR@  ${OTHERINCDIR} -I.
 
-CFLAGS=-O0 -Wall -g ${INCLUDE} ${OTHER_CFLAGS} -fPIC
+CFLAGS=-O0 -Wall -Wno-unused-function -g ${INCLUDE} ${OTHER_CFLAGS} -fPIC
 
 LIBOBJS=mcal.o datetime.o lex.ical_yy.o icalroutines.o cal_misc.o $(DRIVER_LIBS) tester.o
 ALLOBJS=${LIBOBJS}
